@@ -1,17 +1,13 @@
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
-
 [tool.poetry]
 name = "movie-recommendation-system"
 version = "0.1.0"
 description = "A movie recommendation system trained using PyTorch Lightning"
-authors = ["Your Name <your@email.com>"]
+authors = ["Erik Grip <erik.grip@outlook.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
-torch = "^1.9.0"
-pytorch-lightning = "^1.4.9"
+python = "3.11.7"
+torch = "^2.3"
+pytorch-lightning = "^2.3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"
