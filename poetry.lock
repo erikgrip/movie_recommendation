@@ -1,0 +1,47 @@
+[[package]]
+name = "pytorch-lightning"
+version = "1.4.9"
+description = "The lightweight PyTorch wrapper for high-performance AI research."
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "torch"
+version = "1.9.0"
+description = "Tensors and Dynamic neural networks in Python with strong GPU acceleration"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "numpy"
+version = "1.21.2"
+description = "Array processing for numbers, strings, records, and objects."
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "requests"
+version = "2.26.0"
+description = "Python HTTP for Humans."
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "pytest"
+version = "6.2.5"
+description = "pytest: simple powerful testing with Python"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "pylint"
+version = "2.11.1"
+description = "Python code static checker"
+category = "dev"
+optional = false
+python-versions = "*"
