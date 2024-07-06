@@ -14,10 +14,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
-        python-version: 3.8
+        python-version: 3.11.7
 
     - name: Install dependencies
       run: |
@@ -25,10 +27,10 @@ jobs:
         pip install poetry
         poetry install
 
-    - name: Run tests
+    - name: Test
       run: |
         poetry run pytest
 
-    - name: Lint code
+    - name: Lint
       run: |
-        poetry run flake8
+        poetry run black --check .
