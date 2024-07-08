@@ -16,6 +16,7 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -34,3 +35,7 @@ jobs:
     - name: Lint
       run: |
         poetry run black --check .
+
+    - name: Type check
+      run: |
+        poetry run mypy .

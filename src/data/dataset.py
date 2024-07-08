@@ -1,6 +1,7 @@
 import csv
-from io import TextIOWrapper
 import zipfile
+from io import TextIOWrapper
+
 import torch
 
 DATA_PATH = "data/ml-latest.zip"
@@ -9,7 +10,7 @@ RATING_COLUMNS = ["userId", "movieId", "rating", "timestamp"]
 
 class MovieLensDataset(torch.utils.data.Dataset):
     """
-    The Movie Lens Dataset class. This class prepares the dataset for training and validation.
+    The Movie Lens Dataset class.
     """
 
     def __init__(self):
@@ -17,12 +18,12 @@ class MovieLensDataset(torch.utils.data.Dataset):
         Initializes the dataset object with user, movie, and rating data.
         """
         data = self._read_ratings()
-        self.users = [int(user) for user in data["userId"]]
-        self.movies = [int(movie) for movie in data["movieId"]]
-        self.ratings = [float(rating) for rating in data["rating"]]
+        self.users: list = [int(user) for user in data["userId"]]
+        self.movies: list = [int(movie) for movie in data["movieId"]]
+        self.ratings: list = [float(rating) for rating in data["rating"]]
 
     @staticmethod
-    def _read_ratings() -> dict:
+    def _read_ratings() -> dict[str, tuple[str]]:
         """
         Loads the ratings data from the zip file.
         """
