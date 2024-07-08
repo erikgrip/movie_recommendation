@@ -6,7 +6,7 @@ class MovieRecommendationModel(pl.LightningModule):
     """PyTorch Lightning module for the movie recommendation model."""
 
     def __init__(self):
-        super(MovieRecommendationModel, self).__init__()
+        super().__init__()
         # Define your model architecture here
 
     def forward(self, x):

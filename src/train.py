@@ -1,6 +1,5 @@
 import torch
-import torch.nn as nn
-import torch.optim as optim
+from torch import nn, optim
 from torch.utils.data import DataLoader
 
 from src.data.dataset import MovieLensDataset
@@ -24,7 +23,7 @@ dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
 
 # Training loop
 for epoch in range(10):
-    running_loss = 0.0
+    running_loss = 0.0  # pylint: disable=invalid-name
     for batch in dataloader:
         inputs, labels = batch
 
