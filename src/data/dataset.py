@@ -1,13 +1,6 @@
 """ Pytorch dataset for the Movie Lens ratings data. """
 
-import csv
-import zipfile
-from io import TextIOWrapper
-
 import torch
-
-DATA_PATH = "data/ml-latest.zip"
-RATING_COLUMNS = ["userId", "movieId", "rating", "timestamp"]
 
 
 class MovieLensDataset(torch.utils.data.Dataset):
@@ -15,32 +8,13 @@ class MovieLensDataset(torch.utils.data.Dataset):
     The Movie Lens Dataset class.
     """
 
-    def __init__(self):
+    def __init__(self, users: list[int], movies: list[int], ratings: list[float]):
         """
         Initializes the dataset object with user, movie, and rating data.
         """
-        data = self._read_ratings()
-        self.users: list = [int(user) for user in data["userId"]]
-        self.movies: list = [int(movie) for movie in data["movieId"]]
-        self.ratings: list = [float(rating) for rating in data["rating"]]
-
-    @staticmethod
-    def _read_ratings() -> dict[str, tuple[str]]:
-        """
-        Loads the ratings data from the zip file.
-        """
-        data = []
-        with zipfile.ZipFile(DATA_PATH) as archive:
-            with archive.open("ratings.csv") as file:
-                reader = csv.reader(TextIOWrapper(file, "utf-8"))
-                for row in reader:
-                    data.append(row)
-                if data[0] != RATING_COLUMNS:
-                    raise ValueError(
-                        f"Invalid rating file headers. Expected {RATING_COLUMNS}, got {data[0]}"
-                    )
-
-        return dict(zip(RATING_COLUMNS, zip(*data[1:])))
+        self.users = users
+        self.movies = movies
+        self.ratings = ratings
 
     def __len__(self) -> int:
         """
