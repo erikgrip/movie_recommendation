@@ -12,9 +12,10 @@ def fixture_mock_open():
     mock_data_path = "tests/fixtures/ratings.csv"
     mock_zipfile = MagicMock()
     mock_zipfile.__enter__.return_value = mock_zipfile
-    mock_zipfile.open = MagicMock(return_value=open(mock_data_path, "rb"))
     with patch("zipfile.ZipFile", MagicMock(return_value=mock_zipfile)):
-        yield mock_zipfile
+        with open(mock_data_path, "rb") as file:
+            mock_zipfile.open = MagicMock(return_value=file)
+            yield mock_zipfile
 
 
 def test_movie_lens_dataset(mock_data_file):  # pylint: disable=unused-argument
