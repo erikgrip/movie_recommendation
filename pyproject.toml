@@ -5,9 +5,10 @@ description = "A movie recommendation system trained using PyTorch Lightning"
 authors = ["Erik Grip <erik.grip@outlook.com>"]
 
 [tool.poetry.dependencies]
+pandas = "^2.2"
 python = "3.11.7"
-torch = "^2.3"
 pytorch-lightning = "^2.3"
+torch = "^2.3"
 
 [tool.poetry.dev-dependencies]
 black = "*"
