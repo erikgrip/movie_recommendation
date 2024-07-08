@@ -17,9 +17,9 @@ class MovieLensDataset(torch.utils.data.Dataset):
         Initializes the dataset object with user, movie, and rating data.
         """
         data = self._read_ratings()
-        self.users = data["userId"]
-        self.movies = data["movieId"]
-        self.ratings = data["rating"]
+        self.users = [int(user) for user in data["userId"]]
+        self.movies = [int(movie) for movie in data["movieId"]]
+        self.ratings = [float(rating) for rating in data["rating"]]
 
     @staticmethod
     def _read_ratings() -> dict:
@@ -32,7 +32,10 @@ class MovieLensDataset(torch.utils.data.Dataset):
                 reader = csv.reader(TextIOWrapper(file, "utf-8"))
                 for row in reader:
                     data.append(row)
-                assert data[0] == RATING_COLUMNS
+                if data[0] != RATING_COLUMNS:
+                    raise ValueError(
+                        f"Invalid rating file headers. Expected {RATING_COLUMNS}, got {data[0]}"
+                    )
 
         return dict(zip(RATING_COLUMNS, zip(*data[1:])))
 
@@ -42,7 +45,7 @@ class MovieLensDataset(torch.utils.data.Dataset):
         """
         return len(self.users)
 
-    def __getitem__(self, idx: int) -> dict:
+    def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
         """
         Returns a sample from the dataset at the given index.
         """
