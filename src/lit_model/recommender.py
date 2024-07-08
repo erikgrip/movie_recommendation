@@ -1,3 +1,5 @@
+""" Movie recommendation model. """
+
 import pytorch_lightning as pl
 import torch
 

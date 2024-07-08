@@ -1,3 +1,5 @@
+""" Pytorch dataset for the Movie Lens ratings data. """
+
 import csv
 import zipfile
 from io import TextIOWrapper

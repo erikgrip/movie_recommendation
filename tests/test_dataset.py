@@ -1,3 +1,5 @@
+""" Test the dataset module. """
+
 from unittest.mock import MagicMock, patch
 
 import pytest

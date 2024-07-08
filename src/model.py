@@ -1,9 +1,11 @@
+""" Movie recommendation model. """
+
 # pylint: disable=arguments-differ
 import pytorch_lightning as pl
 
 
 class MovieRecommendationModel(pl.LightningModule):
-    """PyTorch Lightning module for the movie recommendation model."""
+    """PyTorch Lightning model for movie recommendation."""
 
     def __init__(self):
         super().__init__()
