@@ -50,6 +50,7 @@ jobs:
     - name: Lint
       run: |
         poetry run black --check .
+        poetry run pylint --fail-under=10.0 .
 
     - name: Type check
       run: |
