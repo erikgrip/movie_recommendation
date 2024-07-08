@@ -39,3 +39,7 @@ jobs:
     - name: Type check
       run: |
         poetry run mypy .
+
+    - name: Import check
+      run: |
+        poetry run isort --check .

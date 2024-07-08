@@ -2,8 +2,9 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from src.model import MovieRecommendationModel
+
 from src.data.dataset import MovieLensDataset
+from src.model import MovieRecommendationModel
 
 # Set random seed for reproducibility
 torch.manual_seed(42)
