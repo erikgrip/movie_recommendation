@@ -19,13 +19,39 @@ def fixture_mock_open():
             mock_zipfile.open = MagicMock(return_value=file)
             yield mock_zipfile
 
+@pytest.fixture(name="mock_data")
+def fixture_mock_data():
+    """Mock some data for the dataset."""
+    users = [1, 2, 3]
+    movies = [1, 2, 3]
+    ratings = [5.0, 4.0, 3.0]
+    yield (users, movies, ratings)
 
-def test_movie_lens_dataset(mock_data_file):  # pylint: disable=unused-argument
+
+def test_movie_lens_dataset(mock_data):
     """Test the MovieLensDataset class."""
-    dataset = MovieLensDataset()
+    dataset = MovieLensDataset(mock_data[0], mock_data[1], mock_data[2])
     assert len(dataset) == 3
     assert dataset[0] == {
         "users": torch.tensor(1, dtype=torch.long),
         "movies": torch.tensor(1, dtype=torch.long),
         "ratings": torch.tensor(5.0, dtype=torch.float),
     }
+
+def test_movie_lens_dataset_uneven_data_length():
+    """Test the MovieLensDataset class with invalid data."""
+    with pytest.raises(ValueError):
+        MovieLensDataset([1, 2], [1, 2, 3], [5.0, 4.0, 3.0])
+    with pytest.raises(ValueError):
+        MovieLensDataset([1, 2, 3], [1, 2, 3], [5.0, 4.0])
+    with pytest.raises(ValueError):
+        MovieLensDataset([1, 2, 3], [1, 2, 3], [5.0, 4.0, 3.0, 2.0])
+
+def test_movie_lens_dataset_invalid_data_type():
+    """Test the MovieLensDataset class with invalid data types."""
+    with pytest.raises(ValueError):
+        MovieLensDataset(["1", "2", "3"], [1, 2, 3], [5.0, 4.0, 3.0])
+    with pytest.raises(ValueError):
+        MovieLensDataset([1, 2, 3], [1, "2", 3], [5.0, 4.0, 3.0])
+    with pytest.raises(ValueError):
+        MovieLensDataset([1, 2, 3], [1, 2, 3], [5.0, None, 3.0])

@@ -15,6 +15,20 @@ class MovieLensDataset(torch.utils.data.Dataset):
         self.users = users
         self.movies = movies
         self.ratings = ratings
+        self._validate_data()
+
+    def _validate_data(self):
+        """
+        Validates data to ensure it is the same length and has the correct types.
+        """
+        if not len(self.users) == len(self.movies) == len(self.ratings):
+            raise ValueError("users, movies, and ratings must be the same length")
+        if not all(isinstance(u, int) for u in self.users):
+            raise ValueError("users must be a list of integers")
+        if not all(isinstance(m, int) for m in self.movies):
+            raise ValueError("movies must be a list of integers")
+        if not all(isinstance(r, float) for r in self.ratings):
+            raise ValueError("ratings must be a list of floats")
 
     def __len__(self) -> int:
         """
