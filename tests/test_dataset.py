@@ -19,6 +19,7 @@ def fixture_mock_open():
             mock_zipfile.open = MagicMock(return_value=file)
             yield mock_zipfile
 
+
 @pytest.fixture(name="mock_data")
 def fixture_mock_data():
     """Mock some data for the dataset."""
@@ -38,6 +39,7 @@ def test_movie_lens_dataset(mock_data):
         "ratings": torch.tensor(5.0, dtype=torch.float),
     }
 
+
 def test_movie_lens_dataset_uneven_data_length():
     """Test the MovieLensDataset class with invalid data."""
     with pytest.raises(ValueError):
@@ -46,6 +48,7 @@ def test_movie_lens_dataset_uneven_data_length():
         MovieLensDataset([1, 2, 3], [1, 2, 3], [5.0, 4.0])
     with pytest.raises(ValueError):
         MovieLensDataset([1, 2, 3], [1, 2, 3], [5.0, 4.0, 3.0, 2.0])
+
 
 def test_movie_lens_dataset_invalid_data_type():
     """Test the MovieLensDataset class with invalid data types."""
