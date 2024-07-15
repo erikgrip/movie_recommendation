@@ -21,7 +21,7 @@ class MovieLensDataModule(pl.LightningDataModule):
         super().__init__()
         self.test_frac = test_frac
         self.train_dataset: Union[MovieLensDataset, None] = None
-        self.test_dataset = Union[MovieLensDataset, None] = None
+        self.test_dataset: Union[MovieLensDataset, None] = None
         self._validate_test_frac()
 
     def _validate_test_frac(self):
