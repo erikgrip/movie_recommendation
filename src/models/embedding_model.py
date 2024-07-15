@@ -7,7 +7,7 @@ import torch
 from torch import nn
 
 
-class RecommendationModel(nn.Module):
+class RecommendationModel(nn.Module):  # pylint: disable=too-many-instance-attributes
     """
     A PyTorch model for recommendation with user and movie embeddings.
     """
@@ -19,7 +19,7 @@ class RecommendationModel(nn.Module):
         embedding_size: int = 256,
         hidden_dim: int = 256,
         dropout_rate: float = 0.2,
-    ):
+    ):  # pylint: disable=too-many-arguments
         super().__init__()
         self.num_users = num_users
         self.num_movies = num_movies
