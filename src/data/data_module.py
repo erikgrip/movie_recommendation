@@ -2,8 +2,9 @@
 
 import zipfile
 from io import TextIOWrapper
+from typing import Union
 
-import pandas as pd
+import pandas as pd  # type: ignore
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 
@@ -19,8 +20,8 @@ class MovieLensDataModule(pl.LightningDataModule):
     def __init__(self, test_frac: float = 0.1):
         super().__init__()
         self.test_frac = test_frac
-        self.train_dataset = None
-        self.test_dataset = None
+        self.train_dataset: Union[MovieLensDataset, None] = None
+        self.test_dataset = Union[MovieLensDataset, None] = None
         self._validate_test_frac()
 
     def _validate_test_frac(self):
