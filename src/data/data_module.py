@@ -29,6 +29,7 @@ class MovieLensDataModule(pl.LightningDataModule):
             raise ValueError("test_frac must be between 0.05 and 0.95")
 
     def prepare_data(self):
+        """Download data and other preparation steps to be done only once."""
         with zipfile.ZipFile(self.data_path) as archive:
             print(archive.namelist())
             with archive.open(self.data_path) as file:
@@ -38,6 +39,7 @@ class MovieLensDataModule(pl.LightningDataModule):
                 )
 
     def setup(self, stage: str):
+        """Split the data into train and test sets and other setup steps to be done once per GPU."""
         dtypes = {"userId": "int32", "movieId": "int32", "rating": "float32"}
         df = (
             pd.read_csv(self.output_path)

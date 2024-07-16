@@ -3,7 +3,7 @@
 import tempfile
 from unittest.mock import MagicMock, patch
 
-import pandas as pd
+import pandas as pd  # type: ignore
 import pytest
 from torch.utils.data import DataLoader
 
