@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pandas as pd  # type: ignore
 import pytest
+from torch import tensor
 from torch.utils.data import DataLoader
 
 from src.data.data_module import MovieLensDataModule
@@ -76,10 +77,18 @@ def test_prepare_data(mock_output_path):
 def test_setup(frac, expected_train_len, expected_test_len):
     """Test the setup method for different test fractions."""
     data_module = MovieLensDataModule(test_frac=frac)
-    data_module.setup("fit")
 
-    assert len(data_module.train_dataset) == expected_train_len
+    data_module.setup("fit")
+    train_len = len(data_module.train_dataset)
+    assert train_len == expected_train_len
     assert data_module.test_dataset is None
+    if train_len > 0:
+        # Oldest rating should be at the end
+        assert data_module.train_dataset[-1] == {
+            "movies": tensor(0),
+            "ratings": tensor(4.0),
+            "users": tensor(1),
+        }
 
     data_module.setup("test")
     assert len(data_module.test_dataset) == expected_test_len
