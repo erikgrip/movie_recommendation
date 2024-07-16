@@ -6,7 +6,7 @@ from typing import Union
 
 import pandas as pd  # type: ignore
 import pytorch_lightning as pl
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder  # type: ignore
 from torch.utils.data import DataLoader
 
 from src.data.dataset import MovieLensDataset
@@ -50,7 +50,7 @@ class MovieLensDataModule(pl.LightningDataModule):
         # Encode user and movie IDs
         df["user_label"] = LabelEncoder().fit_transform(df.userId.values)
         df["movie_label"] = LabelEncoder().fit_transform(df.movieId.values)
-        df = df[['user_label', 'movie_label', 'rating']]
+        df = df[["user_label", "movie_label", "rating"]]
 
         test_size = round(len(df) * self.test_frac)
 

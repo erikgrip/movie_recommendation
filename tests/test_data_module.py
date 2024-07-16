@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pandas as pd  # type: ignore
 import pytest
-from torch import tensor
+import torch
 from torch.utils.data import DataLoader
 
 from src.data.data_module import MovieLensDataModule
@@ -85,9 +85,9 @@ def test_setup(frac, expected_train_len, expected_test_len):
     if train_len > 0:
         # Oldest rating should be at the end
         assert data_module.train_dataset[-1] == {
-            "movies": tensor(0),
-            "ratings": tensor(4.0),
-            "users": tensor(1),
+            "movies": torch.tensor(0),
+            "ratings": torch.tensor(4.0),
+            "users": torch.tensor(1),
         }
 
     data_module.setup("test")
