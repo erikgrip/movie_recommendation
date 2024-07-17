@@ -1,4 +1,4 @@
-userId,movieId,rating,timestamp,user_label,movie_label
-1,1,5,978824268,0,0
-1,2,3,978300760,0,1
-2,1,4,978298413,1,0
+userId,movieId,rating,timestamp
+1,1,5,978824268
+1,2,3,978300760
+2,1,4,978298413

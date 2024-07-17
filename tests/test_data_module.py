@@ -29,8 +29,6 @@ def test_init():
     data_module = MovieLensDataModule()
     assert data_module.zip_path == "/tmp/ml-latest.zip"
     assert data_module.data_path == "/tmp/ratings.csv"
-    assert data_module.user_labels_path == "/tmp/user_labels.npy"
-    assert data_module.movie_labels_path == "/tmp/movie_labels.npy"
     assert data_module.test_frac == 0.1
 
 
@@ -47,7 +45,7 @@ def test_prepare_data():
     data_module.prepare_data()
     with open(data_module.data_path, "r", encoding="utf-8") as file:
         data = file.readlines()
-    assert data[0].strip() == "userId,movieId,rating,timestamp,user_label,movie_label"
+    assert data[0].strip() == "userId,movieId,rating,timestamp"
     assert len(data) == 4
 
 
