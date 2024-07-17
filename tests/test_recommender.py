@@ -1,6 +1,5 @@
 """Tests for the LitRecommender class."""
 
-import numpy as np
 import pytest
 import torch
 
@@ -13,13 +12,11 @@ from tests.mocking import (  # pylint: disable=unused-import
 @pytest.fixture(name="lit_model")
 def fixture_lit_model(data_module):
     """Create an example LitRecommender model."""
-    data_module.prepare_data()
-    user_labels = np.load(data_module.user_labels_path)
-    movie_labels = np.load(data_module.movie_labels_path)
+    data_module.setup()
 
     model = RecommendationModel(
-        num_users=len(user_labels),
-        num_movies=len(movie_labels),
+        num_users=data_module.num_user_labels(),
+        num_movies=data_module.num_movie_labels(),
         embedding_size=4,
         hidden_dim=4,
         dropout_rate=0.0,
