@@ -27,7 +27,9 @@ class LitRecommender(pl.LightningModule):
             torch.float32
         )  # Assuming ratings is already 1D
         loss = F.mse_loss(output, ratings)
-        self.log("train_loss", loss)
+        self.log(
+            "train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True
+        )
         return loss
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
