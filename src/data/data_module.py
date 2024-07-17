@@ -58,8 +58,8 @@ class MovieLensDataModule(pl.LightningDataModule):
         """Split the data into train and test sets and other setup steps to be done once per GPU."""
         dtypes = {"user_label": "int32", "movie_label": "int32", "rating": "float32"}
         df = pd.read_csv(
-            self.data_path, usecols=dtypes.keys(), dtype=dtypes
-        ).sort_values(by="timestamp", ascending=False)
+            self.data_path
+        ).sort_values(by="timestamp", ascending=False)[dtypes.keys()].astype(dtypes)
         test_size = round(len(df) * self.test_frac)
 
         if stage == "fit":
