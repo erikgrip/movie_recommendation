@@ -5,17 +5,13 @@
 import pytorch_lightning as pl
 import torch
 
-from src.models.embedding_model import RecommendationModel
-
 
 class LitRecommender(pl.LightningModule):
     """PyTorch Lightning module for the movie recommendation model."""
 
-    def __init__(self):
+    def __init__(self, model: torch.nn.Module):
         super().__init__()
-        self.model = RecommendationModel(
-            num_users=1000, num_movies=1000, embedding_size=256, hidden_dim=256, dropout_rate=0.2
-        )
+        self.model = model
 
     def forward(self, *args, x=None, **kwargs):
         """Forward pass of the model."""
@@ -23,19 +19,14 @@ class LitRecommender(pl.LightningModule):
 
     def training_step(self, train_batch=None, batch_idx=None):
         """Training step."""
-        output = recommendation_model(
-            train_data["users"].to(device), train_data["movies"].to(device)
-        )
+        output = self.model(train_batch["users"], train_batch["movies"])
         # Reshape the model output to match the target's shape
         output = output.squeeze()  # Removes the singleton dimension
-        ratings = (
-            train_data["ratings"].to(torch.float32).to(device)
+        ratings = train_batch["ratings"].to(
+            torch.float32
         )  # Assuming ratings is already 1D
 
-        loss = loss_func(output, ratings)
-        inputs, target = train_batch
-        output = self.model(inputs, target)
-        loss = torch.nn.MSELoss(output, target.view(-1))
+        loss = torch.nn.MSELoss(output, ratings)
         self.log("train_loss", loss)
         return loss
 
