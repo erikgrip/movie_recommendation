@@ -40,12 +40,8 @@ class MovieLensDataset(torch.utils.data.Dataset):
         """
         Returns a sample from the dataset at the given index.
         """
-        users = self.users[idx]
-        movies = self.movies[idx]
-        ratings = self.ratings[idx]
-
         return {
-            "users": torch.tensor(users, dtype=torch.long),
-            "movies": torch.tensor(movies, dtype=torch.long),
-            "ratings": torch.tensor(ratings, dtype=torch.float),
+            "users": torch.tensor(self.users[idx], dtype=torch.long),
+            "movies": torch.tensor(self.movies[idx], dtype=torch.long),
+            "ratings": torch.tensor(self.ratings[idx], dtype=torch.float),
         }
