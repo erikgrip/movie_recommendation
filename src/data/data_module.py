@@ -4,6 +4,7 @@ import zipfile
 from io import TextIOWrapper
 from typing import Union
 
+import numpy as np
 import pandas as pd  # type: ignore
 import pytorch_lightning as pl
 from sklearn.preprocessing import LabelEncoder  # type: ignore
@@ -15,8 +16,12 @@ from src.data.dataset import MovieLensDataset
 class MovieLensDataModule(pl.LightningDataModule):
     """Lightning data module for the MovieLens ratings data."""
 
-    data_path = "data/ml-latest.zip"
-    output_path = "data/ratings.csv"
+    # Input path
+    zip_path = "data/ml-latest.zip"
+    # Output paths
+    data_path = "data/ratings.csv"
+    user_labels_path = "data/user_labels.npy"
+    movie_labels_path = "data/movie_labels.npy"
 
     def __init__(self, test_frac: float = 0.1):
         super().__init__()
@@ -31,27 +36,30 @@ class MovieLensDataModule(pl.LightningDataModule):
 
     def prepare_data(self):
         """Download data and other preparation steps to be done only once."""
+        lbl_user = LabelEncoder()
+        lbl_movie = LabelEncoder()
+
         with zipfile.ZipFile(self.data_path) as archive:
             print(archive.namelist())
             with archive.open(self.data_path) as file:
-                print(f"Writing data to {self.output_path}...")
-                pd.read_csv(TextIOWrapper(file, "utf-8")).to_csv(
-                    self.output_path, index=False
-                )
+                print(f"Writing data to {self.data_path}...")
+                df = pd.read_csv(TextIOWrapper(file, "utf-8"))
+                df["user_label"] = lbl_user.fit_transform(df.userId)
+                df["movie_label"] = lbl_movie.fit_transform(df.movieId)
+                df.to_csv(self.data_path, index=False)
+
+        # Save the label encoders
+        print(f"Saving user label encoder to {self.user_labels_path}...")
+        np.save(self.user_labels_path, lbl_user.classes_)
+        print(f"Saving movie label encoder to {self.movie_labels_path}...")
+        np.save(self.movie_labels_path, lbl_movie.classes_)
 
     def setup(self, stage: str):
         """Split the data into train and test sets and other setup steps to be done once per GPU."""
-        dtypes = {"userId": "int32", "movieId": "int32", "rating": "float32"}
-        df = (
-            pd.read_csv(self.output_path)
-            .sort_values(by="timestamp", ascending=False)[dtypes.keys()]
-            .astype(dtypes)
-        )
-        # Encode user and movie IDs
-        df["user_label"] = LabelEncoder().fit_transform(df.userId.values)
-        df["movie_label"] = LabelEncoder().fit_transform(df.movieId.values)
-        df = df[["user_label", "movie_label", "rating"]]
-
+        dtypes = {"user_label": "int32", "movie_label": "int32", "rating": "float32"}
+        df = pd.read_csv(
+            self.data_path, usecols=dtypes.keys(), dtype=dtypes
+        ).sort_values(by="timestamp", ascending=False)
         test_size = round(len(df) * self.test_frac)
 
         if stage == "fit":
