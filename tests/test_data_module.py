@@ -14,13 +14,13 @@ from src.data.data_module import MovieLensDataModule
 @pytest.fixture(name="mock_zip", autouse=True)
 def fixture_mock_zip():
     """Fixture to mock zipfile.ZipFile.open with a test fixture file."""
-    mock_data_path = "tests/fixtures/ratings.csv"
+    mock_csv_path = "tests/fixtures/ratings.csv"
     mock_zipfile = MagicMock()
     mock_zipfile.__enter__.return_value = mock_zipfile
     with patch(
         "src.data.data_module.zipfile.ZipFile", MagicMock(return_value=mock_zipfile)
     ):
-        with open(mock_data_path, "rb") as file:
+        with open(mock_csv_path, "rb") as file:
             mock_zipfile.open = MagicMock(return_value=file)
             yield mock_zipfile
 
@@ -34,8 +34,8 @@ def fixture_mock_csv():
         yield mock_csv
 
 
-@pytest.fixture(name="mock_output_path", autouse=True)
-def fixture_mock_output_path():
+@pytest.fixture(name="mock_data_path", autouse=True)
+def fixture_mock_data_path():
     """Fixture to create a temporary directory for the output path."""
     with tempfile.TemporaryDirectory() as tmp_dir:
         yield f"{tmp_dir}/ratings.csv"
@@ -45,8 +45,10 @@ def test_init():
     """Test the initialization of MovieLensDataModule."""
     data_module = MovieLensDataModule()
 
-    assert data_module.data_path == "data/ml-latest.zip"
-    assert data_module.output_path == "data/ratings.csv"
+    assert data_module.zip_path == "data/ml-latest.zip"
+    assert data_module.data_path == "data/ratings.csv"
+    assert data_module.user_labels_path == "data/user_labels.npy"
+    assert data_module.movie_labels_path == "data/movie_labels.npy"
     assert data_module.test_frac == 0.1
 
 
@@ -57,16 +59,16 @@ def test_init_invalid_test_fraction(test_frac):
         MovieLensDataModule(test_frac)
 
 
-def test_prepare_data(mock_output_path):
+def test_prepare_data(mock_data_path):
     """Test the prepare_data method."""
     with patch(
-        "src.data.data_module.MovieLensDataModule.output_path", mock_output_path
+        "src.data.data_module.MovieLensDataModule.data_path", mock_data_path
     ):
         data_module = MovieLensDataModule()
         data_module.prepare_data()
-        with open(mock_output_path, "r", encoding="utf-8") as file:
+        with open(mock_data_path, "r", encoding="utf-8") as file:
             data = file.readlines()
-        assert data[0].strip() == "userId,movieId,rating,timestamp"
+        assert data[0].strip() == "userId,movieId,rating,timestamp,user_label,movie_label"
         assert len(data) == 4
 
 
