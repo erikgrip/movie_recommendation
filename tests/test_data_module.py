@@ -61,14 +61,14 @@ def test_init_invalid_test_fraction(test_frac):
 
 def test_prepare_data(mock_data_path):
     """Test the prepare_data method."""
-    with patch(
-        "src.data.data_module.MovieLensDataModule.data_path", mock_data_path
-    ):
+    with patch("src.data.data_module.MovieLensDataModule.data_path", mock_data_path):
         data_module = MovieLensDataModule()
         data_module.prepare_data()
         with open(mock_data_path, "r", encoding="utf-8") as file:
             data = file.readlines()
-        assert data[0].strip() == "userId,movieId,rating,timestamp,user_label,movie_label"
+        assert (
+            data[0].strip() == "userId,movieId,rating,timestamp,user_label,movie_label"
+        )
         assert len(data) == 4
 
 

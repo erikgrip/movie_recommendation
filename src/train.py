@@ -1,10 +1,10 @@
 """ Train a movie recommendation model. """
 
 import torch
+from model import MovieRecommendationModel
 from torch import nn, optim
 from torch.utils.data import DataLoader
 
-from model import MovieRecommendationModel
 from src.data.dataset import MovieLensDataset
 
 # Set random seed for reproducibility

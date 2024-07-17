@@ -4,6 +4,7 @@
 
 import pytorch_lightning as pl
 import torch
+import torch.nn.functional as F
 
 
 class LitRecommender(pl.LightningModule):
@@ -17,7 +18,7 @@ class LitRecommender(pl.LightningModule):
         """Forward pass of the model."""
         # in lightning, forward defines the prediction/inference actions
 
-    def training_step(self, train_batch=None, batch_idx=None):
+    def training_step(self, train_batch=None, batch_idx=None) -> torch.Tensor:
         """Training step."""
         output = self.model(train_batch["users"], train_batch["movies"])
         # Reshape the model output to match the target's shape
@@ -25,12 +26,11 @@ class LitRecommender(pl.LightningModule):
         ratings = train_batch["ratings"].to(
             torch.float32
         )  # Assuming ratings is already 1D
-
-        loss = torch.nn.MSELoss(output, ratings)
+        loss = F.mse_loss(output, ratings)
         self.log("train_loss", loss)
         return loss
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> torch.optim.Optimizer:
         """Configure optimizers and learning rate schedulers."""
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
         return optimizer

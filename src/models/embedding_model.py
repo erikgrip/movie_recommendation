@@ -44,7 +44,7 @@ class RecommendationModel(nn.Module):  # pylint: disable=too-many-instance-attri
         # Activation function
         self.relu = nn.ReLU()
 
-    def forward(self, users, movies):
+    def forward(self, users: torch.Tensor, movies: torch.Tensor) -> torch.Tensor:
         """
         Forward pass of the model.
         """
