@@ -2,6 +2,7 @@
 
 import argparse
 import importlib
+from typing import Union
 
 import numpy as np
 import torch
@@ -56,14 +57,14 @@ def _setup_parser():
 
     # Get data, model, and LitModel specific arguments
     data_group = parser.add_argument_group("Data Args")
-    data_class.add_to_argparse(data_group)  # type: ignore
+    # data_class.add_to_argparse(data_group)  # type: ignore
 
     model_group = parser.add_argument_group("Model Args")
-    model_class.add_to_argparse(model_group)  # type: ignore
+    # model_class.add_to_argparse(model_group)  # type: ignore
 
     lit_model_group = parser.add_argument_group("LitModel Args")
     # NOTE: Hardcoded for now, but can be made dynamic
-    lit_models.LitRecommender.add_to_argparse(lit_model_group)
+    # lit_models.LitRecommender.add_to_argparse(lit_model_group)
 
     parser.add_argument("--help", "-h", action="help")
     return parser
@@ -88,11 +89,11 @@ def main():
     data_class = _import_class(f"src.data.{args.data_class}")
     model_class = _import_class(f"src.models.{args.model_class}")
 
-    data = data_class(vars(args))
-
+    data = data_class(args=vars(args))
     # Prepare data so that we can get the config for the model
     data.prepare_data()
     data.setup()
+
     model = model_class(
         num_users=data.num_user_labels(),
         num_movies=data.num_movie_labels(),
@@ -103,8 +104,10 @@ def main():
 
     tb_logger = TensorBoardLogger("training/logs")
 
-    # There's no available val_loss when overfitting to batches
     if args.overfit_batches:
+        if args.overfit_batches.is_integer():
+            args.overfit_batches = int(args.overfit_batches)
+        # There's no available val_loss when overfitting to batches
         loss_to_log = "train_loss"
         enable_checkpointing = False
     else:
@@ -139,7 +142,8 @@ def main():
     )
     # pylint: disable=no-member
     trainer.fit(lit_model, datamodule=data)
-    trainer.test(lit_model, datamodule=data)
+    # TODO: Uncomment this line when LitRecommender test_step() is implemented
+    # trainer.test(lit_model, datamodule=data)
     # pylint: enable=no-member
 
     best_model_path = model_checkpoint_callback.best_model_path

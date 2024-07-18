@@ -3,6 +3,7 @@
 Copied from https://pureai.substack.com/p/recommender-systems-with-pytorch
 """
 
+from typing import Dict, Optional
 import torch
 from torch import nn
 
@@ -19,6 +20,7 @@ class RecommendationModel(nn.Module):  # pylint: disable=too-many-instance-attri
         embedding_size: int = 256,
         hidden_dim: int = 256,
         dropout_rate: float = 0.2,
+        args: Optional[Dict] = None,
     ):  # pylint: disable=too-many-arguments
         super().__init__()
         self.num_users = num_users

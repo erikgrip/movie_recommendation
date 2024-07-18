@@ -3,7 +3,7 @@
 import zipfile
 from io import TextIOWrapper
 from pathlib import Path
-from typing import Union
+from typing import Dict, Optional, Union
 
 import pandas as pd  # type: ignore
 import pytorch_lightning as pl
@@ -11,19 +11,22 @@ from sklearn.preprocessing import LabelEncoder  # type: ignore
 from torch.utils.data import DataLoader
 
 from src.data.dataset import MovieLensDataset
+from src.utils.log import logger
 
 
 class MovieLensDataModule(pl.LightningDataModule):
     """Lightning data module for the MovieLens ratings data."""
 
-    def __init__(self, test_frac: float = 0.1):
+    data_file_name = "ratings.csv"
+
+    def __init__(self, test_frac: float = 0.1, args: Optional[Dict] = None):
         super().__init__()
         self.test_frac = test_frac
         self._validate_test_frac()
         self.train_dataset: Union[MovieLensDataset, None] = None
         self.test_dataset: Union[MovieLensDataset, None] = None
-        self._zip_path: Path = self.data_dirname() / "ml-latest.zip"
-        self._data_path: Path = self.data_dirname() / "ratings.csv"
+        self._zip_file: Path = self.data_dirname() / "ml-latest.zip"
+        self._data_path: Path = self.data_dirname() / self.data_file_name
         self.user_label_encoder: LabelEncoder = LabelEncoder()
         self.movie_label_encoder: LabelEncoder = LabelEncoder()
 
@@ -39,7 +42,7 @@ class MovieLensDataModule(pl.LightningDataModule):
     @property
     def zip_path(self) -> str:
         """Return the path to the ratings data zip file."""
-        return str(self._zip_path)
+        return str(self._zip_file)
 
     @property
     def data_path(self) -> str:
@@ -68,9 +71,13 @@ class MovieLensDataModule(pl.LightningDataModule):
 
     def prepare_data(self):
         """Download data and other preparation steps to be done only once."""
-        with zipfile.ZipFile(self._zip_path, "r") as archive:
-            with archive.open(self._data_path) as file:
-                print(f"Writing data to {self.data_path}...")
+        if self._data_path.exists():
+            logger.info("Using data already exctracted at %s", self._data_path)
+            return
+
+        with zipfile.ZipFile(self._zip_file, "r") as archive:
+            with archive.open(f"ml-latest/{self.data_file_name}", "r") as file:
+                logger.info("Writing data to %s...", self.data_path)
                 pd.read_csv(TextIOWrapper(file, "utf-8")).to_csv(
                     self._data_path, index=False
                 )

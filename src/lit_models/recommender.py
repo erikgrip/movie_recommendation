@@ -2,6 +2,7 @@
 
 # pylint: disable=arguments-differ,unused-argument
 
+from typing import Dict, Optional
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
@@ -10,7 +11,7 @@ import torch.nn.functional as F
 class LitRecommender(pl.LightningModule):
     """PyTorch Lightning module for the movie recommendation model."""
 
-    def __init__(self, model: torch.nn.Module):
+    def __init__(self, model: torch.nn.Module, args: Optional[Dict] = None):
         super().__init__()
         self.model = model
 
