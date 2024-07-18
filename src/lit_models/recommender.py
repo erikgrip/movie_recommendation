@@ -50,13 +50,15 @@ class LitRecommender(pl.LightningModule):
         )
         return parser
 
-    def forward(self, *args, x=None, **kwargs):
+    def forward(self, users: torch.Tensor, movies: torch.Tensor) -> torch.Tensor:
         """Forward pass of the model."""
-        # in lightning, forward defines the prediction/inference actions
+        return self.model(users, movies)
 
-    def training_step(self, train_batch=None, batch_idx=None) -> torch.Tensor:
+    def training_step(
+        self, train_batch: Dict[str, torch.Tensor], batch_idx: Optional[int] = None
+    ) -> torch.Tensor:
         """Training step."""
-        output = self.model(train_batch["users"], train_batch["movies"])
+        output = self(train_batch["users"], train_batch["movies"])
         output = output.squeeze()  # Removes the singleton dimension
         ratings = train_batch["ratings"].to(torch.float32)
         loss = F.mse_loss(output, ratings)
