@@ -21,6 +21,9 @@ DEFAULT_EARLY_STOPPING = 10
 np.random.seed(42)
 torch.manual_seed(42)
 
+# Faster, but less precise than default value "highest"
+torch.set_float32_matmul_precision("high")
+
 
 def _import_class(module_and_class_name: str) -> type:
     """Import class from a module, e.g. 'motion_title_generator.models.t5'."""
