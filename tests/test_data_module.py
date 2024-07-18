@@ -22,13 +22,11 @@ def fixture_mock_csv():
 
 
 def test_init():
-    """Test the initialization of MovieLensDataModule.
-
-    Note that the data directory is set to /tmp by the data module fixture.
-    """
+    """Test the initialization of MovieLensDataModule."""
     data_module = MovieLensDataModule()
-    assert data_module.zip_path == "/tmp/ml-latest.zip"
-    assert data_module.data_path == "/tmp/ratings.csv"
+    mock_data_dir = data_module.data_dirname()
+    assert data_module.zip_path == str(mock_data_dir / "ml-latest.zip")
+    assert data_module.data_path == str(mock_data_dir / "ratings.csv")
     assert data_module.test_frac == 0.1
 
 

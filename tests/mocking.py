@@ -1,7 +1,7 @@
 """Module to define fixtures for mocking objects in tests."""
 
+import tempfile
 from pathlib import Path
-from tempfile import tempdir
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -28,6 +28,6 @@ def fixture_data_module():
     """Create a MovieLensDataModule instance with a temporary data directory."""
     with patch(
         "src.data.data_module.MovieLensDataModule.data_dirname",
-        MagicMock(return_value=Path(tempdir)),
+        MagicMock(return_value=Path(tempfile.mkdtemp())),
     ):
         yield MovieLensDataModule()

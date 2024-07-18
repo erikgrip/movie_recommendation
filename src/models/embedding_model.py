@@ -4,6 +4,7 @@ Copied from https://pureai.substack.com/p/recommender-systems-with-pytorch
 """
 
 from typing import Dict, Optional
+
 import torch
 from torch import nn
 

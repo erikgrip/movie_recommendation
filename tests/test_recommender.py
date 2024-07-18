@@ -12,6 +12,7 @@ from tests.mocking import (  # pylint: disable=unused-import
 @pytest.fixture(name="lit_model")
 def fixture_lit_model(data_module):
     """Create an example LitRecommender model."""
+    data_module.prepare_data()
     data_module.setup()
 
     model = RecommendationModel(
