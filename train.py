@@ -25,7 +25,7 @@ torch.set_float32_matmul_precision("high")
 
 
 def _import_class(module_and_class_name: str) -> type:
-    """Import class from a module, e.g. 'motion_title_generator.models.t5'."""
+    """Import class from a module."""
     module_name, class_name = module_and_class_name.rsplit(".", 1)
     module = importlib.import_module(module_name)
     class_ = getattr(module, class_name)
@@ -65,7 +65,7 @@ def _setup_parser():
 
     lit_model_group = parser.add_argument_group("LitModel Args")
     # NOTE: Hardcoded for now, but can be made dynamic
-    # lit_models.LitRecommender.add_to_argparse(lit_model_group)
+    lit_models.LitRecommender.add_to_argparse(lit_model_group)
 
     parser.add_argument("--help", "-h", action="help")
     return parser
@@ -140,11 +140,9 @@ def main():
         logger=tb_logger,
         enable_checkpointing=enable_checkpointing,
     )
-    # pylint: disable=no-member
     trainer.fit(lit_model, datamodule=data)
     # TODO: Uncomment this line when LitRecommender test_step() is implemented
     # trainer.test(lit_model, datamodule=data)
-    # pylint: enable=no-member
 
     best_model_path = model_checkpoint_callback.best_model_path
     if best_model_path:
