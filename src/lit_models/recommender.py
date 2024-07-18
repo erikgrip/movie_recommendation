@@ -27,16 +27,24 @@ class LitRecommender(pl.LightningModule):
     def training_step(self, train_batch=None, batch_idx=None) -> torch.Tensor:
         """Training step."""
         output = self.model(train_batch["users"], train_batch["movies"])
-        # Reshape the model output to match the target's shape
         output = output.squeeze()  # Removes the singleton dimension
-        ratings = train_batch["ratings"].to(
-            torch.float32
-        )  # Assuming ratings is already 1D
+        ratings = train_batch["ratings"].to(torch.float32)
         loss = F.mse_loss(output, ratings)
-        self.log(
-            "train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True
-        )
+        self.log("train_loss", loss, prog_bar=True)
+        self.training_step_losses.append(loss)
         return loss
+
+    def on_train_end(self):
+        all_losses = torch.stack(self.training_step_losses)
+        logger.info(
+            "Avg loss first 5 training steps: %s",
+            round(torch.mean(all_losses[:5]).item(), 4),
+        )
+        logger.info(
+            "Avg loss last 5 training steps: %s",
+            round(torch.mean(all_losses[-5:]).item(), 4),
+        )
+        self.training_step_losses.clear()  # free memory
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """Configure optimizers and learning rate schedulers."""
