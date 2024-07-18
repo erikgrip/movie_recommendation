@@ -1,5 +1,7 @@
 """Test suite for the MovieLensDataModule class."""
 
+# pylint: disable=unused-import
+
 from unittest.mock import patch
 
 import pandas as pd  # type: ignore
@@ -8,8 +10,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from src.data.data_module import MovieLensDataModule
-from tests.mocking import (  # pylint: disable=unused-import
-    fixture_data_module, fixture_mock_zip)
+from tests.mocking import fixture_data_module, fixture_mock_zip
 
 
 @pytest.fixture(name="mock_csv", autouse=True)

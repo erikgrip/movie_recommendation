@@ -1,12 +1,13 @@
 """Tests for the LitRecommender class."""
 
+# pylint: disable=unused-import
+
 import pytest
 import torch
 
 from src.lit_models.recommender import LitRecommender
 from src.models.embedding_model import RecommendationModel
-from tests.mocking import (  # pylint: disable=unused-import
-    fixture_data_module, fixture_mock_zip)
+from tests.mocking import fixture_data_module, fixture_mock_zip
 
 
 @pytest.fixture(name="model")
