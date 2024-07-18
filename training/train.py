@@ -61,7 +61,7 @@ def _setup_parser():
     data_class.add_to_argparse(data_group)
 
     model_group = parser.add_argument_group("Model Args")
-    # model_class.add_to_argparse(model_group)  # type: ignore
+    model_class.add_to_argparse(model_group)
 
     lit_model_group = parser.add_argument_group("LitModel Args")
     # NOTE: Hardcoded for now, but can be made dynamic

@@ -11,17 +11,21 @@ def fixture_model():
     """Create an example RecommendationModel."""
     num_users = 100
     num_movies = 200
-    embedding_size = 256
-    hidden_dim = 256
-    dropout_rate = 0.2
+    args = {
+        "embedding_size": 256,
+        "hidden_dim": 256,
+        "dropout_rate": 0.2,
+    }
+    return RecommendationModel(num_users=num_users, num_movies=num_movies, args=args)
 
-    return RecommendationModel(
-        num_users=num_users,
-        num_movies=num_movies,
-        embedding_size=embedding_size,
-        hidden_dim=hidden_dim,
-        dropout_rate=dropout_rate,
-    )
+
+def test_recommendation_model_init(model):
+    """Test the initialization of RecommendationModel."""
+    assert model.num_users == 100
+    assert model.num_movies == 200
+    assert model.embedding_size == 256
+    assert model.hidden_dim == 256
+    assert model.dropout_rate == 0.2
 
 
 @pytest.mark.parametrize(

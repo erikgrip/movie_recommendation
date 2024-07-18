@@ -15,12 +15,15 @@ def fixture_lit_model(data_module):
     data_module.prepare_data()
     data_module.setup()
 
+    args = {
+        "embedding_size": 4,
+        "hidden_dim": 4,
+        "dropout_rate": 0.0,
+    }
     model = RecommendationModel(
         num_users=data_module.num_user_labels(),
         num_movies=data_module.num_movie_labels(),
-        embedding_size=4,
-        hidden_dim=4,
-        dropout_rate=0.0,
+        args=args,
     )
     return LitRecommender(model=model)
 
