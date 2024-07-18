@@ -43,7 +43,7 @@ def _setup_parser():
     )
     trainer_group.add_argument("--devices", default="auto", help="Number of GPUs")
     trainer_group.add_argument("--max_epochs", type=int, default=-1)
-    trainer_group.add_argument("--fast_dev_run", type=bool, default=False)
+    trainer_group.add_argument("--fast_dev_run", type=int, default=0)
     trainer_group.add_argument("--overfit_batches", type=float, default=0.0)
 
     # Basic arguments
