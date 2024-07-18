@@ -13,6 +13,10 @@ from torch.utils.data import DataLoader
 from src.data.dataset import MovieLensDataset
 from src.utils.log import logger
 
+BATCH_SIZE = 32
+NUM_WORKERS = 0
+TEST_FRAC = 0.2
+
 
 class MovieLensDataModule(pl.LightningDataModule):
     """Lightning data module for the MovieLens ratings data."""
@@ -23,11 +27,14 @@ class MovieLensDataModule(pl.LightningDataModule):
     user_label_encoder: LabelEncoder = LabelEncoder()
     movie_label_encoder: LabelEncoder = LabelEncoder()
 
-    def __init__(self, test_frac: float = 0.1, args: Optional[Dict] = None):
+    def __init__(self, args: Optional[Dict] = None):
         super().__init__()
-        self.test_frac = test_frac
+        args = args or {}
+        self.batch_size = args.get("batch_size", BATCH_SIZE)
+        self.num_workers = args.get("num_workers", NUM_WORKERS)
+        self.test_frac = args.get("test_frac", TEST_FRAC)
         self._validate_test_frac()
-        self.args = args or {}
+
         self._zip_file: Path = self.data_dirname() / "ml-latest.zip"
         self._data_path: Path = self.data_dirname() / self.data_file_name
 
@@ -39,6 +46,28 @@ class MovieLensDataModule(pl.LightningDataModule):
     def data_dirname(cls) -> Path:
         """Return Path relative to where this script is stored."""
         return Path(__file__).resolve().parents[2] / "data"
+
+    @staticmethod
+    def add_to_argparse(parser):  # pylint: disable=missing-function-docstring
+        parser.add_argument(
+            "--batch_size",
+            type=int,
+            default=BATCH_SIZE,
+            help=f"Number of examples in each batch (default: {BATCH_SIZE})",
+        )
+        parser.add_argument(
+            "--num_workers",
+            type=int,
+            default=NUM_WORKERS,
+            help=f"Number of workers to use for data loading (default: {NUM_WORKERS})",
+        )
+        parser.add_argument(
+            "--test_frac",
+            type=float,
+            default=TEST_FRAC,
+            help=f"Fraction of data to use for testing (default: {TEST_FRAC})",
+        )
+        return parser
 
     @property
     def zip_path(self) -> str:

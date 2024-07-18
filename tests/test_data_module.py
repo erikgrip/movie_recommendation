@@ -27,14 +27,14 @@ def test_init():
     mock_data_dir = data_module.data_dirname()
     assert data_module.zip_path == str(mock_data_dir / "ml-latest.zip")
     assert data_module.data_path == str(mock_data_dir / "ratings.csv")
-    assert data_module.test_frac == 0.1
+    assert data_module.test_frac == 0.2
 
 
 @pytest.mark.parametrize("test_frac", [-0.1, 0.04, 0.96])
 def test_init_invalid_test_fraction(test_frac):
     """Test initialization with invalid test fraction values."""
     with pytest.raises(ValueError):
-        MovieLensDataModule(test_frac)
+        MovieLensDataModule(args={"test_frac": test_frac})
 
 
 def test_prepare_data():
@@ -53,7 +53,7 @@ def test_prepare_data():
 )
 def test_setup(frac, expected_train_len, expected_test_len):
     """Test the setup method for different test fractions."""
-    data_module = MovieLensDataModule(test_frac=frac)
+    data_module = MovieLensDataModule(args={"test_frac": frac})
 
     data_module.setup("fit")
     train_len = len(data_module.train_dataset)
@@ -73,7 +73,7 @@ def test_setup(frac, expected_train_len, expected_test_len):
 
 def test_train_dataloader():
     """Test the train_dataloader method."""
-    data_module = MovieLensDataModule(test_frac=0.33)
+    data_module = MovieLensDataModule(args={"test_frac": 0.33})
     data_module.setup("fit")
     train_dataloader = data_module.train_dataloader()
 
@@ -83,7 +83,7 @@ def test_train_dataloader():
 
 def test_test_dataloader():
     """Test the test_dataloader method."""
-    data_module = MovieLensDataModule(test_frac=0.33)
+    data_module = MovieLensDataModule(args={"test_frac": 0.33})
     data_module.setup("test")
     test_dataloader = data_module.test_dataloader()
 

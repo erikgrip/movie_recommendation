@@ -2,7 +2,6 @@
 
 import argparse
 import importlib
-from typing import Union
 
 import numpy as np
 import torch
@@ -10,7 +9,7 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 
-from src import lit_models, models
+from src import lit_models
 from src.utils.log import logger
 
 DEFAULT_DATA_CLASS = "MovieLensDataModule"
@@ -50,7 +49,6 @@ def _setup_parser():
     # Basic arguments
     parser.add_argument("--data_class", type=str, default=DEFAULT_DATA_CLASS)
     parser.add_argument("--model_class", type=str, default=DEFAULT_MODEL_CLASS)
-    parser.add_argument("--load_checkpoint", type=str, default=None)
     parser.add_argument("--early_stopping", type=int, default=DEFAULT_EARLY_STOPPING)
 
     # Get the data and model classes, so that we can add their specific arguments
@@ -60,7 +58,7 @@ def _setup_parser():
 
     # Get data, model, and LitModel specific arguments
     data_group = parser.add_argument_group("Data Args")
-    # data_class.add_to_argparse(data_group)  # type: ignore
+    data_class.add_to_argparse(data_group)
 
     model_group = parser.add_argument_group("Model Args")
     # model_class.add_to_argparse(model_group)  # type: ignore
