@@ -66,6 +66,13 @@ class LitRecommender(pl.LightningModule):
         self.training_step_losses.append(loss)
         return loss
 
+    def test_step(
+        self, val_batch: Dict[str, torch.Tensor], batch_idx: Optional[int] = None
+    ):
+        """Test step."""
+        output = self(val_batch["users"], val_batch["movies"])
+        output = output.squeeze()
+
     def on_train_end(self):
         all_losses = torch.stack(self.training_step_losses)
         logger.info(

@@ -49,8 +49,8 @@ def test_lit_recommender_forward(lit_model):
     users = torch.tensor([0])
     movies = torch.tensor([1])
     output = lit_model(users=users, movies=movies)
-    # TODO: implement lit_model.forward() method
-    assert output is None
+    assert isinstance(output, torch.Tensor)
+    assert output.shape == (1, 1)
 
 
 def test_lit_recommender_training_step(lit_model):
