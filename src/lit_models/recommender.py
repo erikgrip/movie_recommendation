@@ -8,13 +8,17 @@ import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 
+from src.utils.log import logger
+
 
 class LitRecommender(pl.LightningModule):
     """PyTorch Lightning module for the movie recommendation model."""
 
     def __init__(self, model: torch.nn.Module, args: Optional[Dict] = None):
         super().__init__()
+        self.args = args or {}
         self.model = model
+        self.training_step_losses: list[torch.Tensor] = []
 
     def forward(self, *args, x=None, **kwargs):
         """Forward pass of the model."""

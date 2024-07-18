@@ -130,7 +130,6 @@ def main():
     )
 
     trainer = Trainer(
-        precision="bf16-mixed",
         accelerator=args.accelerator,
         devices=args.devices,
         max_epochs=args.max_epochs,

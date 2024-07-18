@@ -17,19 +17,19 @@ from src.utils.log import logger
 class MovieLensDataModule(pl.LightningDataModule):
     """Lightning data module for the MovieLens ratings data."""
 
-    data_file_name = "ratings.csv"
+    data_file_name: str = "ratings.csv"
+    train_dataset: Union[MovieLensDataset, None] = None
+    test_dataset: Union[MovieLensDataset, None] = None
+    user_label_encoder: LabelEncoder = LabelEncoder()
+    movie_label_encoder: LabelEncoder = LabelEncoder()
 
     def __init__(self, test_frac: float = 0.1, args: Optional[Dict] = None):
         super().__init__()
         self.test_frac = test_frac
         self._validate_test_frac()
         self.args = args or {}
-        self.train_dataset: Union[MovieLensDataset, None] = None
-        self.test_dataset: Union[MovieLensDataset, None] = None
         self._zip_file: Path = self.data_dirname() / "ml-latest.zip"
         self._data_path: Path = self.data_dirname() / self.data_file_name
-        self.user_label_encoder: LabelEncoder = LabelEncoder()
-        self.movie_label_encoder: LabelEncoder = LabelEncoder()
 
     def _validate_test_frac(self):
         if not 0.05 < self.test_frac < 0.95:
