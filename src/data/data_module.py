@@ -1,9 +1,10 @@
 """ PyTorch Lightning data module for the MovieLens ratings data. """
 
 import zipfile
+from argparse import ArgumentParser
 from io import TextIOWrapper
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, Optional
 
 import pandas as pd  # type: ignore
 import pytorch_lightning as pl
@@ -22,8 +23,8 @@ class MovieLensDataModule(pl.LightningDataModule):
     """Lightning data module for the MovieLens ratings data."""
 
     data_file_name: str = "ratings.csv"
-    train_dataset: Union[MovieLensDataset, None] = None
-    test_dataset: Union[MovieLensDataset, None] = None
+    train_dataset: MovieLensDataset
+    test_dataset: MovieLensDataset
     user_label_encoder: LabelEncoder = LabelEncoder()
     movie_label_encoder: LabelEncoder = LabelEncoder()
 
@@ -48,7 +49,8 @@ class MovieLensDataModule(pl.LightningDataModule):
         return Path(__file__).resolve().parents[2] / "data"
 
     @staticmethod
-    def add_to_argparse(parser):  # pylint: disable=missing-function-docstring
+    def add_to_argparse(parser: ArgumentParser) -> ArgumentParser:
+        """Add data module arguments to the parser."""
         parser.add_argument(
             "--batch_size",
             type=int,
@@ -79,7 +81,7 @@ class MovieLensDataModule(pl.LightningDataModule):
         """Return the path to the ratings data."""
         return str(self._data_path)
 
-    def num_user_labels(self):
+    def num_user_labels(self) -> int:
         """Return the number of unique users in the dataset."""
         try:
             classes = self.user_label_encoder.classes_
@@ -89,7 +91,7 @@ class MovieLensDataModule(pl.LightningDataModule):
             ) from e
         return classes.shape[0]
 
-    def num_movie_labels(self):
+    def num_movie_labels(self) -> int:
         """Return the number of unique movies in the dataset."""
         try:
             classes = self.movie_label_encoder.classes_
@@ -137,8 +139,8 @@ class MovieLensDataModule(pl.LightningDataModule):
                 *df.iloc[:test_size].to_dict(orient="list").values()
             )
 
-    def train_dataloader(self):
+    def train_dataloader(self) -> DataLoader:
         return DataLoader(self.train_dataset, batch_size=32, shuffle=True)
 
-    def test_dataloader(self):
+    def test_dataloader(self) -> DataLoader:
         return DataLoader(self.test_dataset, batch_size=32, shuffle=False)

@@ -94,11 +94,11 @@ def test_prepare_data_already_exctracted():
 def test_setup(frac, expected_train_len, expected_test_len):
     """Test the setup method for different test fractions."""
     data_module = MovieLensDataModule(args={"test_frac": frac})
+    data_module.prepare_data()
 
     data_module.setup("fit")
     train_len = len(data_module.train_dataset)
     assert train_len == expected_train_len
-    assert data_module.test_dataset is None
     if train_len > 0:
         # Oldest rating should be at the end
         assert data_module.train_dataset[-1] == {
