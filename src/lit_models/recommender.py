@@ -7,7 +7,7 @@ from typing import Dict, Optional
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
-from sklearn.metrics import mean_squared_error  # type: ignore
+from torchmetrics import MeanSquaredError, Metric
 
 from src.utils.log import logger
 
@@ -21,16 +21,18 @@ class LitRecommender(pl.LightningModule):
 
     def __init__(self, model: torch.nn.Module, args: Optional[Dict] = None):
         super().__init__()
+        args = args or {}
+        optimizer: str = args.get("optimizer", OPTIMIZER)
+
         self.model = model
-        self.args = args or {}
-        optimizer = self.args.get("optimizer", OPTIMIZER)
-        self.optimizer_class = getattr(torch.optim, optimizer)
-        self.lr = self.args.get("lr", LR)
-        self.one_cycle_max_lr = self.args.get("one_cycle_max_lr")
-        self.one_cycle_total_steps = self.args.get(
+        self.optimizer_class: torch.optim.Optimizer = getattr(torch.optim, optimizer)
+        self.lr: float = args.get("lr", LR)
+        self.one_cycle_max_lr: Optional[float] = args.get("one_cycle_max_lr")
+        self.one_cycle_total_steps: int = args.get(
             "one_cycle_total_steps", ONE_CYCLE_TOTAL_STEPS
         )
         self.training_step_losses: list[torch.Tensor] = []
+        self.rmse: Metric = MeanSquaredError(squared=False)
 
     @staticmethod
     def add_to_argparse(parser):  # pylint: disable=missing-function-docstring
@@ -72,11 +74,11 @@ class LitRecommender(pl.LightningModule):
     ):
         """Test step."""
         output = self(test_batch["users"], test_batch["movies"])
-        y_pred = output.squeeze().cpu().numpy()
-        y_true = test_batch["ratings"].cpu().numpy()
+        y_pred = output.squeeze()
+        y_true = test_batch["ratings"]
 
         # Calculate RMSE
-        rmse = mean_squared_error(y_true, y_pred, squared=False)
+        rmse = self.rmse(y_pred, y_true)
         self.log("test_rmse", rmse, on_step=False, on_epoch=True, prog_bar=True)
 
     def on_train_end(self):
