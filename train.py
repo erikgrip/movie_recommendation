@@ -136,7 +136,7 @@ def main():
         max_epochs=args.max_epochs,
         fast_dev_run=args.fast_dev_run,
         overfit_batches=args.overfit_batches,
-        callbacks=callbacks,  # type: ignore
+        callbacks=callbacks,
         logger=tb_logger,
         enable_checkpointing=enable_checkpointing,
     )
