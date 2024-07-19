@@ -7,6 +7,7 @@ from typing import Dict, Optional
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
+from sklearn.metrics import mean_squared_error  # type: ignore
 
 from src.utils.log import logger
 
@@ -62,16 +63,21 @@ class LitRecommender(pl.LightningModule):
         output = output.squeeze()  # Removes the singleton dimension
         ratings = train_batch["ratings"].to(torch.float32)
         loss = F.mse_loss(output, ratings)
-        self.log("train_loss", loss, prog_bar=True)
+        self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
         self.training_step_losses.append(loss)
         return loss
 
     def test_step(
-        self, val_batch: Dict[str, torch.Tensor], batch_idx: Optional[int] = None
+        self, test_batch: Dict[str, torch.Tensor], batch_idx: Optional[int] = None
     ):
         """Test step."""
-        output = self(val_batch["users"], val_batch["movies"])
-        output = output.squeeze()
+        output = self(test_batch["users"], test_batch["movies"])
+        y_pred = output.squeeze().cpu().numpy()
+        y_true = test_batch["ratings"].cpu().numpy()
+
+        # Calculate RMSE
+        rmse = mean_squared_error(y_true, y_pred, squared=False)
+        self.log("test_rmse", rmse, on_step=False, on_epoch=True, prog_bar=True)
 
     def on_train_end(self):
         all_losses = torch.stack(self.training_step_losses)
@@ -82,6 +88,9 @@ class LitRecommender(pl.LightningModule):
         logger.info(
             "Avg loss last 5 training steps: %s",
             round(torch.mean(all_losses[-5:]).item(), 4),
+        )
+        logger.info(
+            "Avg loss all training steps: %s", round(torch.mean(all_losses).item(), 4)
         )
         self.training_step_losses.clear()  # free memory
 

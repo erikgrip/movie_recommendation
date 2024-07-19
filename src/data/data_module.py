@@ -1,5 +1,6 @@
 """ PyTorch Lightning data module for the MovieLens ratings data. """
 
+import warnings
 import zipfile
 from argparse import ArgumentParser
 from io import TextIOWrapper
@@ -13,6 +14,8 @@ from torch.utils.data import DataLoader
 
 from src.data.dataset import MovieLensDataset
 from src.utils.log import logger
+
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 BATCH_SIZE = 32
 NUM_WORKERS = 0
