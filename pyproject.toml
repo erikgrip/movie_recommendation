@@ -17,6 +17,7 @@ black = "*"
 ipykernel = "*"
 isort = "*"
 mypy = "*"
+pandas-stubs = "*"
 pylint = "*"
 pytest = "*"
 

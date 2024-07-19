@@ -4,7 +4,7 @@
 
 from unittest.mock import patch
 
-import pandas as pd  # type: ignore
+import pandas as pd
 import pytest
 import torch
 from torch.utils.data import DataLoader

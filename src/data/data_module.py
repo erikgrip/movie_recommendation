@@ -6,7 +6,7 @@ from io import TextIOWrapper
 from pathlib import Path
 from typing import Dict, Optional
 
-import pandas as pd  # type: ignore
+import pandas as pd
 import pytorch_lightning as pl
 from sklearn.preprocessing import LabelEncoder  # type: ignore
 from torch.utils.data import DataLoader
