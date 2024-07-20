@@ -2,11 +2,13 @@
 
 # pylint: disable=arguments-differ,unused-argument
 
+import typing
 from typing import Dict, Optional
 
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
+from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
 from torchmetrics import MeanSquaredError, Metric
 
 from src.utils.log import logger
@@ -25,7 +27,9 @@ class LitRecommender(pl.LightningModule):
         optimizer: str = args.get("optimizer", OPTIMIZER)
 
         self.model = model
-        self.optimizer_class: torch.optim.Optimizer = getattr(torch.optim, optimizer)
+        self.optimizer_class: typing.Type[torch.optim.Optimizer] = getattr(
+            torch.optim, optimizer
+        )
         self.lr: float = args.get("lr", LR)
         self.one_cycle_max_lr: Optional[float] = args.get("one_cycle_max_lr")
         self.one_cycle_total_steps: int = args.get(
@@ -71,7 +75,7 @@ class LitRecommender(pl.LightningModule):
 
     def test_step(
         self, test_batch: Dict[str, torch.Tensor], batch_idx: Optional[int] = None
-    ):
+    ) -> None:
         """Test step."""
         output = self(test_batch["users"], test_batch["movies"])
         y_pred = output.squeeze()
@@ -81,7 +85,7 @@ class LitRecommender(pl.LightningModule):
         rmse = self.rmse(y_pred, y_true)
         self.log("test_rmse", rmse, on_step=False, on_epoch=True, prog_bar=True)
 
-    def on_train_end(self):
+    def on_train_end(self) -> None:
         all_losses = torch.stack(self.training_step_losses)
         logger.info(
             "Avg loss first 5 training steps: %s",
@@ -96,9 +100,9 @@ class LitRecommender(pl.LightningModule):
         )
         self.training_step_losses.clear()  # free memory
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> OptimizerLRSchedulerConfig:
         """Initialize optimizer and learning rate scheduler."""
-        optimizer = self.optimizer_class(self.parameters(), lr=self.lr)
+        optimizer = self.optimizer_class(self.parameters(), lr=self.lr)  # type: ignore
         if self.one_cycle_max_lr is None:
             return {"optimizer": optimizer}
         scheduler = torch.optim.lr_scheduler.OneCycleLR(
