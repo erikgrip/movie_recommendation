@@ -3,13 +3,15 @@
 # pylint: disable=arguments-differ,unused-argument
 
 import typing
+from argparse import ArgumentParser
 from typing import Dict, Optional
 
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
-from torchmetrics import MeanSquaredError, Metric
+from torchmetrics import (MeanSquaredError, Metric, RetrievalPrecision,
+                          RetrievalRecall)
 
 from src.utils.log import logger
 
@@ -37,6 +39,8 @@ class LitRecommender(pl.LightningModule):
         )
         self.training_step_losses: list[torch.Tensor] = []
         self.rmse: Metric = MeanSquaredError(squared=False)
+        self.precision: Metric = RetrievalPrecision(top_k=5, empty_target_action="skip")
+        self.recall: Metric = RetrievalRecall(top_k=5, empty_target_action="skip")
 
     @staticmethod
     def add_to_argparse(parser):  # pylint: disable=missing-function-docstring
@@ -69,7 +73,7 @@ class LitRecommender(pl.LightningModule):
         output = output.squeeze()  # Removes the singleton dimension
         ratings = train_batch["ratings"].to(torch.float32)
         loss = F.mse_loss(output, ratings)
-        self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
         self.training_step_losses.append(loss)
         return loss
 
@@ -78,12 +82,26 @@ class LitRecommender(pl.LightningModule):
     ) -> None:
         """Test step."""
         output = self(test_batch["users"], test_batch["movies"])
-        y_pred = output.squeeze()
-        y_true = test_batch["ratings"]
+        y_pred = output.view(-1)
+        y_true = test_batch["ratings"].to(torch.float32)
 
         # Calculate RMSE
         rmse = self.rmse(y_pred, y_true)
-        self.log("test_rmse", rmse, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("test_rmse", rmse, on_step=True, on_epoch=True, prog_bar=True)
+
+        # NOTE: Don't calculate precision and recall per batch, but at the end of the epoch
+        # when complete predictions for each user are available
+        is_high_rating = y_true > 3.5  # 4s and 5s are considered positive
+
+        # Calculate precision
+        precision = self.precision(y_pred, is_high_rating, indexes=test_batch["users"])
+        self.log(
+            "test_precision", precision, on_step=False, on_epoch=True, prog_bar=True
+        )
+
+        # Calculate recall
+        recall = self.recall(y_pred, is_high_rating, indexes=test_batch["users"])
+        self.log("test_recall", recall, on_step=False, on_epoch=True, prog_bar=True)
 
     def on_train_end(self) -> None:
         all_losses = torch.stack(self.training_step_losses)
