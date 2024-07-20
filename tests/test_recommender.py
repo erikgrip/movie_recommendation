@@ -2,6 +2,9 @@
 
 # pylint: disable=unused-import
 
+from argparse import ArgumentParser
+from unittest.mock import patch
+
 import pytest
 import torch
 
@@ -63,6 +66,33 @@ def test_lit_recommender_training_step(lit_model):
     loss = lit_model.training_step(train_batch=train_batch)
     assert isinstance(loss, torch.Tensor)
     assert loss.item() >= 0.0
+
+
+def test_lit_recommender_training_step_losses(lit_model):
+    """Test the training_step_losses attribute of LitRecommender."""
+    train_batch = {
+        "users": torch.tensor([0]),
+        "movies": torch.tensor([1]),
+        "ratings": torch.tensor([5.0]),
+    }
+    lit_model.training_step(train_batch=train_batch)
+    assert len(lit_model.training_step_losses) == 1
+    assert lit_model.training_step_losses[0].item() >= 0.0
+
+
+def test_lit_recommender_test_step(lit_model):
+    """Test the test_step method of LitRecommender."""
+    pass
+
+
+def test_lit_recommender_add_to_argparse():
+    """Test the add_to_argparse method of LitRecommender."""
+    parser = ArgumentParser()
+    parser = LitRecommender.add_to_argparse(parser)
+    args = parser.parse_args([])
+    assert args.optimizer == "Adam"
+    assert args.lr == 1e-3
+    assert args.one_cycle_total_steps == 100
 
 
 def test_lit_recommender_configure_optimizers(lit_model):

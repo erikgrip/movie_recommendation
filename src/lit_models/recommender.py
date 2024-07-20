@@ -43,7 +43,8 @@ class LitRecommender(pl.LightningModule):
         self.recall: Metric = RetrievalRecall(top_k=5, empty_target_action="skip")
 
     @staticmethod
-    def add_to_argparse(parser):  # pylint: disable=missing-function-docstring
+    def add_to_argparse(parser: ArgumentParser) -> ArgumentParser:
+        # pylint: disable=missing-function-docstring
         parser.add_argument(
             "--optimizer",
             type=str,
