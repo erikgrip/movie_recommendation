@@ -4,7 +4,7 @@
 
 from unittest.mock import patch
 
-import pandas as pd  # type: ignore
+import pandas as pd
 import pytest
 import torch
 from torch.utils.data import DataLoader
@@ -112,21 +112,41 @@ def test_setup(frac, expected_train_len, expected_test_len):
     assert len(data_module.test_dataset) == expected_test_len
 
 
-def test_train_dataloader():
+@pytest.mark.parametrize(
+    "args,expected_batch_size,expected_num_workers,expected_len",
+    [
+        ({}, 32, 0, 2),
+        ({"batch_size": 64, "num_workers": 4, "test_frac": 0.1}, 64, 4, 3),
+    ],
+)
+def test_train_dataloader(
+    args, expected_batch_size, expected_num_workers, expected_len
+):
     """Test the train_dataloader method."""
-    data_module = MovieLensDataModule(args={"test_frac": 0.33})
+    data_module = MovieLensDataModule(args)
     data_module.setup("fit")
     train_dataloader = data_module.train_dataloader()
 
     assert isinstance(train_dataloader, DataLoader)
-    assert len(train_dataloader.dataset) == 2
+    assert len(train_dataloader.dataset) == expected_len
+    assert train_dataloader.batch_size == expected_batch_size
+    assert train_dataloader.num_workers == expected_num_workers
 
 
-def test_test_dataloader():
+@pytest.mark.parametrize(
+    "args,expected_batch_size,expected_num_workers,expected_len",
+    [
+        ({}, 32, 0, 1),
+        ({"batch_size": 64, "num_workers": 4, "test_frac": 0.1}, 64, 4, 0),
+    ],
+)
+def test_test_dataloader(args, expected_batch_size, expected_num_workers, expected_len):
     """Test the test_dataloader method."""
-    data_module = MovieLensDataModule(args={"test_frac": 0.33})
+    data_module = MovieLensDataModule(args)
     data_module.setup("test")
     test_dataloader = data_module.test_dataloader()
 
     assert isinstance(test_dataloader, DataLoader)
-    assert len(test_dataloader.dataset) == 1
+    assert len(test_dataloader.dataset) == expected_len
+    assert test_dataloader.batch_size == expected_batch_size
+    assert test_dataloader.num_workers == expected_num_workers

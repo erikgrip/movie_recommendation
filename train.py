@@ -43,7 +43,7 @@ def _setup_parser():
     )
     trainer_group.add_argument("--devices", default="auto", help="Number of GPUs")
     trainer_group.add_argument("--max_epochs", type=int, default=-1)
-    trainer_group.add_argument("--fast_dev_run", type=bool, default=False)
+    trainer_group.add_argument("--fast_dev_run", type=int, default=0)
     trainer_group.add_argument("--overfit_batches", type=float, default=0.0)
 
     # Basic arguments
@@ -136,13 +136,14 @@ def main():
         max_epochs=args.max_epochs,
         fast_dev_run=args.fast_dev_run,
         overfit_batches=args.overfit_batches,
-        callbacks=callbacks,  # type: ignore
+        callbacks=callbacks,
         logger=tb_logger,
         enable_checkpointing=enable_checkpointing,
     )
     trainer.fit(lit_model, datamodule=data)
     # TODO: Uncomment this line when LitRecommender test_step() is implemented
-    # trainer.test(lit_model, datamodule=data)
+    if not args.overfit_batches:
+        trainer.test(lit_model, datamodule=data)
 
     best_model_path = model_checkpoint_callback.best_model_path
     if best_model_path:

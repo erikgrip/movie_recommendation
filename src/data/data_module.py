@@ -1,18 +1,21 @@
 """ PyTorch Lightning data module for the MovieLens ratings data. """
 
+import warnings
 import zipfile
 from argparse import ArgumentParser
 from io import TextIOWrapper
 from pathlib import Path
 from typing import Dict, Optional
 
-import pandas as pd  # type: ignore
+import pandas as pd
 import pytorch_lightning as pl
 from sklearn.preprocessing import LabelEncoder  # type: ignore
 from torch.utils.data import DataLoader
 
 from src.data.dataset import MovieLensDataset
 from src.utils.log import logger
+
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 BATCH_SIZE = 32
 NUM_WORKERS = 0
@@ -140,7 +143,17 @@ class MovieLensDataModule(pl.LightningDataModule):
             )
 
     def train_dataloader(self) -> DataLoader:
-        return DataLoader(self.train_dataset, batch_size=32, shuffle=True)
+        return DataLoader(
+            self.train_dataset,
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=self.num_workers,
+        )
 
     def test_dataloader(self) -> DataLoader:
-        return DataLoader(self.test_dataset, batch_size=32, shuffle=False)
+        return DataLoader(
+            self.test_dataset,
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+        )
