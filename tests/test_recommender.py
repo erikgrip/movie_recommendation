@@ -37,6 +37,16 @@ def fixture_lit_model(model):
     return LitRecommender(model)
 
 
+@pytest.fixture(name="batch")
+def fixture_batch():
+    """Create an example batch of data."""
+    yield {
+        "users": torch.tensor([0]),
+        "movies": torch.tensor([1]),
+        "ratings": torch.tensor([5.0]),
+    }
+
+
 def test_lit_recommender_init(model):
     """Test the initialization of LitRecommender."""
     lit_model = LitRecommender(model=model)
@@ -47,42 +57,57 @@ def test_lit_recommender_init(model):
     assert not lit_model.training_step_losses
 
 
-def test_lit_recommender_forward(lit_model):
+def test_lit_recommender_forward(lit_model, batch):
     """Test the forward method of LitRecommender."""
-    users = torch.tensor([0])
-    movies = torch.tensor([1])
-    output = lit_model(users=users, movies=movies)
+    output = lit_model(users=batch["users"], movies=batch["movies"])
     assert isinstance(output, torch.Tensor)
     assert output.shape == (1, 1)
 
 
-def test_lit_recommender_training_step(lit_model):
+def test_lit_recommender_training_step(lit_model, batch):
     """Test the training_step method of LitRecommender."""
-    train_batch = {
-        "users": torch.tensor([0]),
-        "movies": torch.tensor([1]),
-        "ratings": torch.tensor([5.0]),
-    }
-    loss = lit_model.training_step(train_batch=train_batch)
+    loss = lit_model.training_step(train_batch=batch)
     assert isinstance(loss, torch.Tensor)
     assert loss.item() >= 0.0
 
 
-def test_lit_recommender_training_step_losses(lit_model):
+def test_lit_recommender_training_step_losses(lit_model, batch):
     """Test the training_step_losses attribute of LitRecommender."""
-    train_batch = {
-        "users": torch.tensor([0]),
-        "movies": torch.tensor([1]),
-        "ratings": torch.tensor([5.0]),
-    }
-    lit_model.training_step(train_batch=train_batch)
+    lit_model.training_step(train_batch=batch)
     assert len(lit_model.training_step_losses) == 1
     assert lit_model.training_step_losses[0].item() >= 0.0
 
 
-def test_lit_recommender_test_step(lit_model):
+def test_lit_recommender_test_step(lit_model, batch):
     """Test the test_step method of LitRecommender."""
-    pass
+    output = lit_model.test_step(test_batch=batch)
+    assert isinstance(output, dict)
+    assert output.keys() == {"loss", "rmse", "precision", "recall"}
+    assert output["loss"].item() >= 0.0
+    assert output["rmse"].item() >= 0.0
+    assert 0.0 <= output["precision"].item() <= 1.0
+    assert 0.0 <= output["recall"].item() <= 1.0
+
+
+def test_lit_recommender_test_step_metric_calculation(lit_model):
+    """Test the test_step_outputs method of LitRecommender."""
+    batch = {
+        "users": torch.tensor([0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]),
+        "movies": torch.tensor([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+        "ratings": torch.tensor(
+            [5.0, 3.0, 4.0, 2.0, 5.0, 4.0, 1.0, 5.0, 3.0, 4.0, 2.0, 5.0]
+        ),
+    }
+    with patch("src.lit_models.recommender.LitRecommender.forward") as mock_forward:
+        # 11 correct predictions and one off by 4
+        mock_forward.return_value = torch.tensor(
+            [5.0, 3.0, 4.0, 2.0, 5.0, 4.0, 1.0, 5.0, 3.0, 4.0, 2.0, 1.0]
+        )
+        output = lit_model.test_step(test_batch=batch)
+    assert round(output["loss"].item(), 3) == 1.333  # 16.0 / 12
+    assert round(output["rmse"].item(), 3) == 1.155
+    assert round(output["precision"].item(), 3) == 0.6  # (0.6 + 0.6) / 2
+    assert round(output["recall"].item(), 3) == 0.875  # (1 + 0.75) / 2
 
 
 def test_lit_recommender_add_to_argparse():
