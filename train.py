@@ -142,7 +142,8 @@ def main():
     )
     trainer.fit(lit_model, datamodule=data)
     # TODO: Uncomment this line when LitRecommender test_step() is implemented
-    trainer.test(lit_model, datamodule=data)
+    if not args.overfit_batches:
+        trainer.test(lit_model, datamodule=data)
 
     best_model_path = model_checkpoint_callback.best_model_path
     if best_model_path:
