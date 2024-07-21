@@ -9,7 +9,8 @@ from typing import Dict, Optional
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
-from torchmetrics import MeanSquaredError, Metric, RetrievalPrecision, RetrievalRecall
+from torchmetrics import (MeanSquaredError, Metric, RetrievalPrecision,
+                          RetrievalRecall)
 
 from src.utils.log import logger
 
@@ -36,12 +37,14 @@ class LitRecommender(pl.LightningModule):
             "one_cycle_total_steps", ONE_CYCLE_TOTAL_STEPS
         )
         self.training_step_losses: list[torch.Tensor] = []
-        self.mse: Metric = MeanSquaredError()
-        self.rmse: Metric = MeanSquaredError(squared=False)
-        self.precision: Metric = RetrievalPrecision(
-            top_k=5, empty_target_action="skip", adaptive_k=True
-        )
-        self.recall: Metric = RetrievalRecall(top_k=5, empty_target_action="skip")
+        self.metrics: Dict[str, Metric] = {
+            "mse": MeanSquaredError(),
+            "rmse": MeanSquaredError(squared=False),
+            "precision": RetrievalPrecision(
+                top_k=5, empty_target_action="skip", adaptive_k=True
+            ),
+            "recall": RetrievalRecall(top_k=5, empty_target_action="skip"),
+        }
 
     @staticmethod
     def add_to_argparse(parser: ArgumentParser) -> ArgumentParser:
@@ -74,7 +77,7 @@ class LitRecommender(pl.LightningModule):
         y_pred = self(train_batch["users"], train_batch["movies"]).view(-1)
         y_true = train_batch["ratings"]
 
-        loss = self.mse(y_pred, y_true)
+        loss = self.metrics["mse"](y_pred, y_true)
         self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
         self.training_step_losses.append(loss)
         return loss
@@ -87,11 +90,11 @@ class LitRecommender(pl.LightningModule):
         y_true = test_batch["ratings"]
 
         # Calculate loss
-        loss = self.mse(y_pred, y_true)
+        loss = self.metrics["mse"](y_pred, y_true)
         self.log("test_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
 
         # Calculate RMSE
-        rmse = self.rmse(y_pred, y_true)
+        rmse = self.metrics["rmse"](y_pred, y_true)
         self.log("test_rmse", rmse, on_step=False, on_epoch=True, prog_bar=True)
 
         # NOTE: Don't calculate precision and recall per batch, but at the end of the epoch
@@ -99,13 +102,17 @@ class LitRecommender(pl.LightningModule):
         is_high_rating = y_true > 3.5  # 4s and 5s are considered positive
 
         # Calculate precision
-        precision = self.precision(y_pred, is_high_rating, indexes=test_batch["users"])
+        precision = self.metrics["precision"](
+            y_pred, is_high_rating, indexes=test_batch["users"]
+        )
         self.log(
             "test_precision", precision, on_step=False, on_epoch=True, prog_bar=True
         )
 
         # Calculate recall
-        recall = self.recall(y_pred, is_high_rating, indexes=test_batch["users"])
+        recall = self.metrics["recall"](
+            y_pred, is_high_rating, indexes=test_batch["users"]
+        )
         self.log("test_recall", recall, on_step=False, on_epoch=True, prog_bar=True)
 
         return {"loss": loss, "rmse": rmse, "precision": precision, "recall": recall}
