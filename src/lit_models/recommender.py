@@ -36,9 +36,11 @@ class LitRecommender(pl.LightningModule):
             "one_cycle_total_steps", ONE_CYCLE_TOTAL_STEPS
         )
         self.training_step_losses: list[torch.Tensor] = []
-        self.mse = MeanSquaredError()
+        self.mse: Metric = MeanSquaredError()
         self.rmse: Metric = MeanSquaredError(squared=False)
-        self.precision: Metric = RetrievalPrecision(top_k=5, empty_target_action="skip")
+        self.precision: Metric = RetrievalPrecision(
+            top_k=5, empty_target_action="skip", adaptive_k=True
+        )
         self.recall: Metric = RetrievalRecall(top_k=5, empty_target_action="skip")
 
     @staticmethod
@@ -69,11 +71,10 @@ class LitRecommender(pl.LightningModule):
         self, train_batch: Dict[str, torch.Tensor], batch_idx: Optional[int] = None
     ) -> torch.Tensor:
         """Training step."""
-        output = self(train_batch["users"], train_batch["movies"])
-        output = output.squeeze()  # Removes the singleton dimension
-        ratings = train_batch["ratings"].to(torch.float32)
+        y_pred = self(train_batch["users"], train_batch["movies"]).view(-1)
+        y_true = train_batch["ratings"]
 
-        loss = self.mse(output, ratings)
+        loss = self.mse(y_pred, y_true)
         self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
         self.training_step_losses.append(loss)
         return loss
@@ -82,17 +83,16 @@ class LitRecommender(pl.LightningModule):
         self, test_batch: Dict[str, torch.Tensor], batch_idx: Optional[int] = None
     ) -> None:
         """Test step."""
-        output = self(test_batch["users"], test_batch["movies"])
-        y_pred = output.view(-1)
-        y_true = test_batch["ratings"].to(torch.float32)
+        y_pred = self(test_batch["users"], test_batch["movies"]).view(-1)
+        y_true = test_batch["ratings"]
 
         # Calculate loss
         loss = self.mse(y_pred, y_true)
         self.log("test_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
 
         # Calculate RMSE
-        loss = self.rmse(y_pred, y_true)
-        self.log("test_rmse", loss, on_step=True, on_epoch=True, prog_bar=True)
+        rmse = self.rmse(y_pred, y_true)
+        self.log("test_rmse", rmse, on_step=True, on_epoch=True, prog_bar=True)
 
         # NOTE: Don't calculate precision and recall per batch, but at the end of the epoch
         # when complete predictions for each user are available
