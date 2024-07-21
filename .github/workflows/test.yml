@@ -57,4 +57,4 @@ jobs:
 
     - name: Import check
       run: |
-        poetry run isort --check .
+        poetry run isort --check --profile=black .

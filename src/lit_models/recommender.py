@@ -9,8 +9,7 @@ from typing import Dict, Optional
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
-from torchmetrics import (MeanSquaredError, Metric, RetrievalPrecision,
-                          RetrievalRecall)
+from torchmetrics import MeanSquaredError, Metric, RetrievalPrecision, RetrievalRecall
 
 from src.utils.log import logger
 
