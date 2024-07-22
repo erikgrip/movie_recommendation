@@ -141,13 +141,14 @@ def main():
         enable_checkpointing=enable_checkpointing,
     )
     trainer.fit(lit_model, datamodule=data)
-    # TODO: Uncomment this line when LitRecommender test_step() is implemented
     if not args.overfit_batches:
         trainer.test(lit_model, datamodule=data)
 
     best_model_path = model_checkpoint_callback.best_model_path
     if best_model_path:
         logger.info("Best model saved at %s:", best_model_path)
+
+    return trainer
 
 
 if __name__ == "__main__":
