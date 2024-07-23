@@ -28,8 +28,8 @@ def fixture_args():
         devices="auto",
         accelerator="auto",
         num_workers=0,
-        max_epochs=-1,
-        early_stopping=50,
+        max_epochs=200,
+        early_stopping=30,
     )
 
 
