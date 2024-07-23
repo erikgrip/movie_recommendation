@@ -10,7 +10,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from src.data.data_module import MovieLensDataModule
-from tests.mocking import fixture_data_module, fixture_mock_zip
+from tests.mocking import MOCK_DATA_SMALL, fixture_data_module, fixture_mock_zip
 
 
 @pytest.fixture(name="mock_csv", autouse=True)
@@ -22,6 +22,7 @@ def fixture_mock_csv():
         yield mock_csv
 
 
+@pytest.mark.parametrize("mock_zip", [MOCK_DATA_SMALL], indirect=True)
 @pytest.mark.parametrize(
     "args,expected_batch_size,expected_num_workers,expected_test_frac",
     [
@@ -40,6 +41,7 @@ def test_init(args, expected_batch_size, expected_num_workers, expected_test_fra
     assert data_module.num_workers == expected_num_workers
 
 
+@pytest.mark.parametrize("mock_zip", [MOCK_DATA_SMALL], indirect=True)
 @pytest.mark.parametrize("test_frac", [-0.1, 0.04, 0.96])
 def test_init_invalid_test_fraction(test_frac):
     """Test initialization with invalid test fraction values."""
@@ -47,6 +49,7 @@ def test_init_invalid_test_fraction(test_frac):
         MovieLensDataModule(args={"test_frac": test_frac})
 
 
+@pytest.mark.parametrize("mock_zip", [MOCK_DATA_SMALL], indirect=True)
 def test_num_labels_before_setup_raises_error():
     """Test that getting number of labels raise an error before setup."""
     data_module = MovieLensDataModule()
@@ -57,6 +60,7 @@ def test_num_labels_before_setup_raises_error():
         data_module.num_movie_labels()
 
 
+@pytest.mark.parametrize("mock_zip", [MOCK_DATA_SMALL], indirect=True)
 def test_num_labels_after_prepare_data():
     """Test num_user_labels and num_movie_labels after setup."""
     data_module = MovieLensDataModule()
@@ -66,6 +70,7 @@ def test_num_labels_after_prepare_data():
     assert data_module.num_movie_labels() == 2
 
 
+@pytest.mark.parametrize("mock_zip", [MOCK_DATA_SMALL], indirect=True)
 def test_prepare_data():
     """Test the prepare_data method."""
     data_module = MovieLensDataModule()
@@ -76,6 +81,7 @@ def test_prepare_data():
     assert len(data) == 4
 
 
+@pytest.mark.parametrize("mock_zip", [MOCK_DATA_SMALL], indirect=True)
 def test_prepare_data_already_exctracted():
     """Test the prepare_data method when the data is already extracted."""
     data_module = MovieLensDataModule()
@@ -88,6 +94,7 @@ def test_prepare_data_already_exctracted():
         assert not mock_zip.called
 
 
+@pytest.mark.parametrize("mock_zip", [MOCK_DATA_SMALL], indirect=True)
 @pytest.mark.parametrize(
     "frac,expected_train_len,expected_test_len",
     [(0.1, 3, 0), (0.33, 2, 1), (0.67, 1, 2), (0.9, 0, 3)],
@@ -112,6 +119,7 @@ def test_setup(frac, expected_train_len, expected_test_len):
     assert len(data_module.test_dataset) == expected_test_len
 
 
+@pytest.mark.parametrize("mock_zip", [MOCK_DATA_SMALL], indirect=True)
 @pytest.mark.parametrize(
     "args,expected_batch_size,expected_num_workers,expected_len",
     [
@@ -133,6 +141,7 @@ def test_train_dataloader(
     assert train_dataloader.num_workers == expected_num_workers
 
 
+@pytest.mark.parametrize("mock_zip", [MOCK_DATA_SMALL], indirect=True)
 @pytest.mark.parametrize(
     "args,expected_batch_size,expected_num_workers,expected_len",
     [

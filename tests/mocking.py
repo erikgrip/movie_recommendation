@@ -8,11 +8,14 @@ import pytest
 
 from src.data.data_module import MovieLensDataModule
 
+MOCK_DATA_SMALL = "tests/fixtures/ratings.csv"  # 3 rows
+MOCK_DATA_LARGE = "tests/fixtures/ratings_sample_100.csv"  # 100 rows
+
 
 @pytest.fixture(name="mock_zip", autouse=True)
-def fixture_mock_zip():
+def fixture_mock_zip(request):
     """Fixture to mock zipfile.ZipFile.open with a test fixture file."""
-    mock_csv_path = "tests/fixtures/ratings.csv"
+    mock_csv_path = request.param
     mock_zipfile = MagicMock()
     mock_zipfile.__enter__.return_value = mock_zipfile
     with patch(
