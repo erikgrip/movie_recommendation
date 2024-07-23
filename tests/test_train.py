@@ -60,6 +60,7 @@ def test_overfit_trainer_calls(args):
             mock_trainer.return_value.test.assert_not_called()
 
 
+# TODO: Change to small data and refactor fixture if large is not needed elsewhere
 @pytest.mark.parametrize("mock_zip", [MOCK_DATA_LARGE], indirect=True)
 def test_overfit_loss_decreases(args):
     """Test that the loss decreases when overfitting batches."""
