@@ -1,5 +1,6 @@
 """Module to define fixtures for mocking objects in tests."""
 
+import os
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -8,29 +9,24 @@ import pytest
 
 from src.data.data_module import MovieLensDataModule
 
+MOCK_ZIP_PATH = "tests/fixtures/sample_100.zip"
+
+
 MOCK_DATA_SMALL = "tests/fixtures/ratings.csv"  # 3 rows
 MOCK_DATA_LARGE = "tests/fixtures/ratings_sample_100.csv"  # 100 rows
-
-
-@pytest.fixture(name="mock_zip", autouse=True)
-def fixture_mock_zip(request):
-    """Fixture to mock zipfile.ZipFile.open with a test fixture file."""
-    mock_csv_path = request.param
-    mock_zipfile = MagicMock()
-    mock_zipfile.__enter__.return_value = mock_zipfile
-    with patch(
-        "src.data.data_module.zipfile.ZipFile", MagicMock(return_value=mock_zipfile)
-    ):
-        with open(mock_csv_path, "rb") as file:
-            mock_zipfile.open = MagicMock(return_value=file)
-            yield mock_zipfile
+MOCK_MOVIES = "tests/fixtures/movies_sample_100.csv"
 
 
 @pytest.fixture(name="data_module", autouse=True)
 def fixture_data_module():
     """Create a MovieLensDataModule instance with a temporary data directory."""
-    with patch(
-        "src.data.data_module.MovieLensDataModule.data_dirname",
-        MagicMock(return_value=Path(tempfile.mkdtemp())),
+    tmpdir = Path(tempfile.mkdtemp())
+    with (
+        patch(
+            "src.data.data_module.MovieLensDataModule.data_dirname",
+            MagicMock(return_value=Path(tmpdir) / "data"),
+        ),
+        patch("src.data.utils.ZIP_SAVE_PATH", MOCK_ZIP_PATH),
     ):
+        os.mkdir(tmpdir / "data")
         yield MovieLensDataModule()

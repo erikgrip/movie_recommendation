@@ -10,19 +10,9 @@ import torch
 from torch.utils.data import DataLoader
 
 from src.data.data_module import MovieLensDataModule
-from tests.mocking import MOCK_DATA_SMALL, fixture_data_module, fixture_mock_zip
+from tests.mocking import MOCK_DATA_SMALL, MOCK_MOVIES, fixture_data_module
 
 
-@pytest.fixture(name="mock_csv", autouse=True)
-def fixture_mock_csv():
-    """Fixture to mock pd.read_csv to return a test fixture dataframe."""
-    mock_df = pd.read_csv("tests/fixtures/ratings.csv")
-    with patch("src.data.data_module.pd.read_csv") as mock_csv:
-        mock_csv.return_value = mock_df
-        yield mock_csv
-
-
-@pytest.mark.parametrize("mock_zip", [MOCK_DATA_SMALL], indirect=True)
 @pytest.mark.parametrize(
     "args,expected_batch_size,expected_num_workers,expected_test_frac",
     [
@@ -34,14 +24,12 @@ def test_init(args, expected_batch_size, expected_num_workers, expected_test_fra
     """Test the initialization of MovieLensDataModule."""
     data_module = MovieLensDataModule(args)
     mock_data_dir = data_module.data_dirname()
-    assert data_module.zip_path == str(mock_data_dir / "ml-latest.zip")
     assert data_module.data_path == str(mock_data_dir / "ratings.csv")
     assert data_module.test_frac == expected_test_frac
     assert data_module.batch_size == expected_batch_size
     assert data_module.num_workers == expected_num_workers
 
 
-@pytest.mark.parametrize("mock_zip", [MOCK_DATA_SMALL], indirect=True)
 @pytest.mark.parametrize("test_frac", [-0.1, 0.04, 0.96])
 def test_init_invalid_test_fraction(test_frac):
     """Test initialization with invalid test fraction values."""
@@ -49,7 +37,6 @@ def test_init_invalid_test_fraction(test_frac):
         MovieLensDataModule(args={"test_frac": test_frac})
 
 
-@pytest.mark.parametrize("mock_zip", [MOCK_DATA_SMALL], indirect=True)
 def test_num_labels_before_setup_raises_error():
     """Test that getting number of labels raise an error before setup."""
     data_module = MovieLensDataModule()
@@ -60,17 +47,15 @@ def test_num_labels_before_setup_raises_error():
         data_module.num_movie_labels()
 
 
-@pytest.mark.parametrize("mock_zip", [MOCK_DATA_SMALL], indirect=True)
 def test_num_labels_after_prepare_data():
     """Test num_user_labels and num_movie_labels after setup."""
     data_module = MovieLensDataModule()
     data_module.prepare_data()
     data_module.setup()
-    assert data_module.num_user_labels() == 2
-    assert data_module.num_movie_labels() == 2
+    assert data_module.num_user_labels() == 100
+    assert data_module.num_movie_labels() == 97
 
 
-@pytest.mark.parametrize("mock_zip", [MOCK_DATA_SMALL], indirect=True)
 def test_prepare_data():
     """Test the prepare_data method."""
     data_module = MovieLensDataModule()
@@ -78,26 +63,25 @@ def test_prepare_data():
     with open(data_module.data_path, "r", encoding="utf-8") as file:
         data = file.readlines()
     assert data[0].strip() == "userId,movieId,rating,timestamp"
-    assert len(data) == 4
+    assert len(data) == 101
 
 
-@pytest.mark.parametrize("mock_zip", [MOCK_DATA_SMALL], indirect=True)
 def test_prepare_data_already_exctracted():
     """Test the prepare_data method when the data is already extracted."""
     data_module = MovieLensDataModule()
     with (
         patch("src.data.data_module.Path.exists") as mock_exists,
-        patch("src.data.data_module.zipfile.ZipFile") as mock_zip,
+        patch("src.data.data_module.download_zip") as mock_zip,
+        patch("src.data.data_module.extract_files") as mock_extract,
     ):
         mock_exists.return_value = True
         data_module.prepare_data()
-        assert not mock_zip.called
+        assert not mock_zip.called and not mock_extract.called
 
 
-@pytest.mark.parametrize("mock_zip", [MOCK_DATA_SMALL], indirect=True)
 @pytest.mark.parametrize(
     "frac,expected_train_len,expected_test_len",
-    [(0.1, 3, 0), (0.33, 2, 1), (0.67, 1, 2), (0.9, 0, 3)],
+    [(0.1, 90, 10), (0.33, 67, 33), (0.67, 33, 67), (0.9, 10, 90)],
 )
 def test_setup(frac, expected_train_len, expected_test_len):
     """Test the setup method for different test fractions."""
@@ -107,24 +91,26 @@ def test_setup(frac, expected_train_len, expected_test_len):
     data_module.setup("fit")
     train_len = len(data_module.train_dataset)
     assert train_len == expected_train_len
+
+    print(data_module.movie_label_encoder.classes_)
+
     if train_len > 0:
         # Oldest rating should be at the end
         assert data_module.train_dataset[-1] == {
-            "movies": torch.tensor(0),
-            "ratings": torch.tensor(4.0),
-            "users": torch.tensor(1),
+            "movies": torch.tensor(12),
+            "ratings": torch.tensor(3.0),
+            "users": torch.tensor(16),
         }
 
     data_module.setup("test")
     assert len(data_module.test_dataset) == expected_test_len
 
 
-@pytest.mark.parametrize("mock_zip", [MOCK_DATA_SMALL], indirect=True)
 @pytest.mark.parametrize(
     "args,expected_batch_size,expected_num_workers,expected_len",
     [
-        ({}, 32, 0, 2),
-        ({"batch_size": 64, "num_workers": 4, "test_frac": 0.1}, 64, 4, 3),
+        ({}, 32, 0, 80),
+        ({"batch_size": 64, "num_workers": 4, "test_frac": 0.1}, 64, 4, 90),
     ],
 )
 def test_train_dataloader(
@@ -132,6 +118,7 @@ def test_train_dataloader(
 ):
     """Test the train_dataloader method."""
     data_module = MovieLensDataModule(args)
+    data_module.prepare_data()
     data_module.setup("fit")
     train_dataloader = data_module.train_dataloader()
 
@@ -141,17 +128,17 @@ def test_train_dataloader(
     assert train_dataloader.num_workers == expected_num_workers
 
 
-@pytest.mark.parametrize("mock_zip", [MOCK_DATA_SMALL], indirect=True)
 @pytest.mark.parametrize(
     "args,expected_batch_size,expected_num_workers,expected_len",
     [
-        ({}, 32, 0, 1),
-        ({"batch_size": 64, "num_workers": 4, "test_frac": 0.1}, 64, 4, 0),
+        ({}, 32, 0, 20),
+        ({"batch_size": 64, "num_workers": 4, "test_frac": 0.1}, 64, 4, 10),
     ],
 )
 def test_test_dataloader(args, expected_batch_size, expected_num_workers, expected_len):
     """Test the test_dataloader method."""
     data_module = MovieLensDataModule(args)
+    data_module.prepare_data()
     data_module.setup("test")
     test_dataloader = data_module.test_dataloader()
 
