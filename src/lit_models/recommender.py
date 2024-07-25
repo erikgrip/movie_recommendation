@@ -113,6 +113,15 @@ class LitRecommender(
 
         return {"loss": loss, "rmse": rmse, "precision": precision, "recall": recall}
 
+    def predict_step(
+        self,
+        pred_batch: Dict[str, torch.Tensor],
+        batch_idx: Optional[int] = None,
+        dataloader_idx: int = 0,
+    ) -> Dict[str, torch.Tensor]:
+        """Prediction step."""
+        return self(pred_batch["users"], pred_batch["movies"])
+
     def on_train_end(self) -> None:
         all_losses = torch.stack(self.training_step_losses)
         logger.info(
