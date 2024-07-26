@@ -92,8 +92,6 @@ def test_setup(frac, expected_train_len, expected_test_len):
     train_len = len(data_module.train_dataset)
     assert train_len == expected_train_len
 
-    print(data_module.movie_label_encoder.classes_)
-
     if train_len > 0:
         # Oldest rating should be at the end
         assert data_module.train_dataset[-1] == {

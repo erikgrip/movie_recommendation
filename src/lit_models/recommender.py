@@ -47,6 +47,7 @@ class LitRecommender(
         )
         self.recall: Metric = RetrievalRecall(top_k=5, empty_target_action="skip")
         self.training_step_losses: list[torch.Tensor] = []
+        self.predict_step_outputs: list[Dict[str, torch.Tensor]] = []
 
     @staticmethod
     def add_to_argparse(parser: ArgumentParser) -> ArgumentParser:
@@ -122,37 +123,45 @@ class LitRecommender(
         pred_batch: Dict[str, torch.Tensor],
         batch_idx: Optional[int] = None,
         dataloader_idx: int = 0,
-    ) -> Dict[str, torch.Tensor]:
-        pred = self(pred_batch["user_label"], pred_batch["movie_label"]).view(-1)
-        return {"predictions": pred}
-
-    def on_predict_end(
-        self,
-        pred_batch: Dict[str, torch.Tensor],
-        batch_idx: Optional[int] = None,
-        dataloader_idx: int = 0,
-    ) -> Dict[str, torch.Tensor]:
+    ) -> None:
         """Prediction step."""
+        self.predict_step_outputs.append(
+            {
+                "user_label": pred_batch["user_label"],
+                "movie_label": pred_batch["movie_label"],
+                "user_id": pred_batch["user_id"],
+                "movie_id": pred_batch["movie_id"],
+            }
+        )
+
+    def on_predict_end(self) -> None:
+        """Prediction step."""
+
+        def concat_results(key: str) -> torch.Tensor:
+            return torch.cat([x[key] for x in self.predict_step_outputs], dim=0)
+
+        # Concat results from all batches
+        user_labels = concat_results("user_label")
+        movie_labels = concat_results("movie_label")
+        movie_ids = concat_results("movie_id")
+
+        # We want to predict ratings for all movies for a single user
         all_movie_labels = torch.tensor(
             list(range(self.model.num_movies)),
             dtype=torch.long,
-            device=pred_batch["user_label"].device,
+            device=user_labels.device,
         )
-        sample_user_label = pred_batch["user_label"][0]
-        user = sample_user_label.repeat(all_movie_labels.size(0))
 
-        seen_movie_labels = (
-            pred_batch["movie_label"][
-                pred_batch["user_label"] == sample_user_label.item()
-            ]
-            .cpu()
-            .numpy()
+        # Randomly sample a user to show recommendations for
+        random_user_id = np.random.choice(user_labels.cpu().numpy())
+        user = (
+            torch.tensor(random_user_id, dtype=torch.long)
+            .to(user_labels.device)
+            .repeat(all_movie_labels.size(0))
         )
-        seen_movie_ids = (
-            pred_batch["movie_id"][pred_batch["user_label"] == sample_user_label.item()]
-            .cpu()
-            .numpy()
-        )
+
+        seen_movie_labels = movie_labels[user_labels == random_user_id].cpu().numpy()
+        seen_movie_ids = movie_ids[user_labels == random_user_id].cpu().numpy()
 
         preds = self(user, all_movie_labels).view(-1)
         preds_df = pd.DataFrame(
@@ -176,9 +185,6 @@ class LitRecommender(
             .head(5)
         )
         logger.info("Top 5 recommendations:\n%s", top_5)
-
-        # return {"predictions": preds}
-        return {"predictions": torch.tensor([1, 2, 3, 4, 5])}
 
     def on_train_end(self) -> None:
         all_losses = torch.stack(self.training_step_losses)
