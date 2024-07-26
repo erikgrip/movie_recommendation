@@ -6,6 +6,8 @@ import typing
 from argparse import ArgumentParser
 from typing import Dict, Optional
 
+import numpy as np
+import pandas as pd
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
@@ -121,9 +123,62 @@ class LitRecommender(
         batch_idx: Optional[int] = None,
         dataloader_idx: int = 0,
     ) -> Dict[str, torch.Tensor]:
+        pred = self(pred_batch["user_label"], pred_batch["movie_label"]).view(-1)
+        return {"predictions": pred}
+
+    def on_predict_end(
+        self,
+        pred_batch: Dict[str, torch.Tensor],
+        batch_idx: Optional[int] = None,
+        dataloader_idx: int = 0,
+    ) -> Dict[str, torch.Tensor]:
         """Prediction step."""
-        preds = self(pred_batch["user_label"], pred_batch["movie_label"]).view(-1)
-        return {"predictions": preds}
+        all_movie_labels = torch.tensor(
+            list(range(self.model.num_movies)),
+            dtype=torch.long,
+            device=pred_batch["user_label"].device,
+        )
+        sample_user_label = pred_batch["user_label"][0]
+        user = sample_user_label.repeat(all_movie_labels.size(0))
+
+        seen_movie_labels = (
+            pred_batch["movie_label"][
+                pred_batch["user_label"] == sample_user_label.item()
+            ]
+            .cpu()
+            .numpy()
+        )
+        seen_movie_ids = (
+            pred_batch["movie_id"][pred_batch["user_label"] == sample_user_label.item()]
+            .cpu()
+            .numpy()
+        )
+
+        preds = self(user, all_movie_labels).view(-1)
+        preds_df = pd.DataFrame(
+            {
+                "user_label": user.cpu(),
+                "movie_label": all_movie_labels.cpu().numpy(),
+                "movie_id": self.trainer.datamodule.movie_label_encoder.inverse_transform(
+                    all_movie_labels.cpu().numpy()
+                ),
+                "pred": preds.cpu().numpy(),
+                "seen": np.isin(all_movie_labels.cpu().numpy(), seen_movie_labels),
+            }
+        )
+
+        movie_meta = pd.read_csv(self.trainer.datamodule.movie_path)
+        user_history = movie_meta[movie_meta["movieId"].isin(seen_movie_ids)]
+        logger.info("User history:\n%s", user_history)
+        top_5 = (
+            movie_meta.merge(preds_df, left_on="movieId", right_on="movie_id")
+            .sort_values(by="pred", ascending=False)
+            .head(5)
+        )
+        logger.info("Top 5 recommendations:\n%s", top_5)
+
+        # return {"predictions": preds}
+        return {"predictions": torch.tensor([1, 2, 3, 4, 5])}
 
     def on_train_end(self) -> None:
         all_losses = torch.stack(self.training_step_losses)
