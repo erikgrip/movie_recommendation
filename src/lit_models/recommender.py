@@ -74,8 +74,8 @@ class LitRecommender(
         self, train_batch: Dict[str, torch.Tensor], batch_idx: Optional[int] = None
     ) -> torch.Tensor:
         """Training step."""
-        y_pred = self(train_batch["users"], train_batch["movies"]).view(-1)
-        y_true = train_batch["ratings"]
+        y_pred = self(train_batch["user_label"], train_batch["movie_label"]).view(-1)
+        y_true = train_batch["rating"]
 
         loss = self.mse(y_pred, y_true)
         self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
@@ -86,8 +86,8 @@ class LitRecommender(
         self, test_batch: Dict[str, torch.Tensor], batch_idx: Optional[int] = None
     ) -> Dict[str, torch.Tensor]:
         """Test step."""
-        y_pred = self(test_batch["users"], test_batch["movies"]).view(-1)
-        y_true = test_batch["ratings"]
+        y_pred = self(test_batch["user_label"], test_batch["movie_label"]).view(-1)
+        y_true = test_batch["rating"]
 
         # Calculate loss
         loss = self.mse(y_pred, y_true)
@@ -102,13 +102,15 @@ class LitRecommender(
         is_high_rating = y_true > 3.5  # 4s and 5s are considered positive
 
         # Calculate precision
-        precision = self.precision(y_pred, is_high_rating, indexes=test_batch["users"])
+        precision = self.precision(
+            y_pred, is_high_rating, indexes=test_batch["user_label"]
+        )
         self.log(
             "test_precision", precision, on_step=False, on_epoch=True, prog_bar=True
         )
 
         # Calculate recall
-        recall = self.recall(y_pred, is_high_rating, indexes=test_batch["users"])
+        recall = self.recall(y_pred, is_high_rating, indexes=test_batch["user_label"])
         self.log("test_recall", recall, on_step=False, on_epoch=True, prog_bar=True)
 
         return {"loss": loss, "rmse": rmse, "precision": precision, "recall": recall}
@@ -120,7 +122,8 @@ class LitRecommender(
         dataloader_idx: int = 0,
     ) -> Dict[str, torch.Tensor]:
         """Prediction step."""
-        return self(pred_batch["users"], pred_batch["movies"])
+        preds = self(pred_batch["user_label"], pred_batch["movie_label"]).view(-1)
+        return {"predictions": preds}
 
     def on_train_end(self) -> None:
         all_losses = torch.stack(self.training_step_losses)

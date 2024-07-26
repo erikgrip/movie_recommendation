@@ -8,40 +8,60 @@ class MovieLensDataset(torch.utils.data.Dataset):
     The Movie Lens Dataset class.
     """
 
-    def __init__(self, users: list[int], movies: list[int], ratings: list[float]):
+    keys: set = {"user_label", "movie_label", "user_id", "movie_id", "rating"}
+
+    def __init__(self, data: dict[str, list]):
+        """Initializes the MovieLensDataset.
+
+        Args:
+            data (dict[str, list]):
+            {
+                "user_label": List[int],
+                "movie_label": List[int],
+                "user_id": List[int],
+                "movie_id": List[int],
+                "rating": List[float],
+            }
         """
-        Initializes the dataset object with user, movie, and rating data.
-        """
-        self.users = users
-        self.movies = movies
-        self.ratings = ratings
+        self.data = data
         self._validate_data()
+        self._length = len(self.data["user_label"])
 
     def _validate_data(self):
         """
         Validates data to ensure it is the same length and has the correct types.
         """
-        if not len(self.users) == len(self.movies) == len(self.ratings):
-            raise ValueError("users, movies, and ratings must be the same length")
-        if not all(isinstance(u, int) for u in self.users):
-            raise ValueError("users must be a list of integers")
-        if not all(isinstance(m, int) for m in self.movies):
-            raise ValueError("movies must be a list of integers")
-        if not all(isinstance(r, float) for r in self.ratings):
-            raise ValueError("ratings must be a list of floats")
+        if not self.data.keys() == self.keys:
+            raise ValueError(
+                f"Data must have keys {self.keys}, but got {self.data.keys()}"
+            )
+
+        for key, values in self.data.items():
+            if len(values) != len(self.data["user_label"]):
+                raise ValueError("All data must be the same length")
+            if key in {"user_label", "movie_label", "user_id", "movie_id"}:
+                if not all(isinstance(v, int) for v in values):
+                    raise ValueError(f"{key} must be a list of integers.")
+            elif key == "rating":
+                if not all(isinstance(v, float) for v in values):
+                    raise ValueError(f"{key} must be a list of floats.")
 
     def __len__(self) -> int:
         """
         Returns the number of samples in the dataset.
         """
-        return len(self.users)
+        return self._length
 
     def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
         """
         Returns a sample from the dataset at the given index.
         """
         return {
-            "users": torch.tensor(self.users[idx], dtype=torch.long),
-            "movies": torch.tensor(self.movies[idx], dtype=torch.long),
-            "ratings": torch.tensor(self.ratings[idx], dtype=torch.float),
+            "user_label": torch.tensor(self.data["user_label"][idx], dtype=torch.long),
+            "movie_label": torch.tensor(
+                self.data["movie_label"][idx], dtype=torch.long
+            ),
+            "user_id": torch.tensor(self.data["user_id"][idx], dtype=torch.long),
+            "movie_id": torch.tensor(self.data["movie_id"][idx], dtype=torch.long),
+            "rating": torch.tensor(self.data["rating"][idx], dtype=torch.float),
         }

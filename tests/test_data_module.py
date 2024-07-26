@@ -10,7 +10,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from src.data.data_module import MovieLensDataModule
-from tests.mocking import MOCK_DATA_SMALL, MOCK_MOVIES, fixture_data_module
+from tests.mocking import fixture_data_module
 
 
 @pytest.mark.parametrize(
@@ -97,9 +97,11 @@ def test_setup(frac, expected_train_len, expected_test_len):
     if train_len > 0:
         # Oldest rating should be at the end
         assert data_module.train_dataset[-1] == {
-            "movies": torch.tensor(12),
-            "ratings": torch.tensor(3.0),
-            "users": torch.tensor(16),
+            "movie_label": torch.tensor(12),
+            "user_label": torch.tensor(16),
+            "movie_id": torch.tensor(485),
+            "rating": torch.tensor(3.0),
+            "user_id": torch.tensor(72565),
         }
 
     data_module.setup("test")

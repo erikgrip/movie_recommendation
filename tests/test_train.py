@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from pytorch_lightning import Trainer
 
-from tests.mocking import MOCK_DATA_LARGE, MOCK_DATA_SMALL, fixture_data_module
+from tests.mocking import fixture_data_module
 from train import main
 
 

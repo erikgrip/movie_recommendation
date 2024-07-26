@@ -133,23 +133,22 @@ class MovieLensDataModule(pl.LightningDataModule):
             pd.read_csv(self.data_path)
             .sort_values(by="timestamp", ascending=False)[dtypes.keys()]
             .astype(dtypes)
+            .rename(columns={"userId": "user_id", "movieId": "movie_id"})
         )
 
-        df["user_label"] = self.user_label_encoder.fit_transform(df.userId)
-        df["movie_label"] = self.movie_label_encoder.fit_transform(df.movieId)
-        df = df[["user_label", "movie_label", "rating"]]
+        df["user_label"] = self.user_label_encoder.fit_transform(df["user_id"])
+        df["movie_label"] = self.movie_label_encoder.fit_transform(df["movie_id"])
 
         test_size = round(len(df) * self.test_frac)
 
+        def to_input_data(df: pd.DataFrame) -> Dict[str, list]:
+            return {str(k): list(v) for k, v in df.to_dict(orient="list").items()}
+
         if stage == "fit":
-            self.train_dataset = MovieLensDataset(
-                *df.iloc[test_size:].to_dict(orient="list").values()
-            )
+            self.train_dataset = MovieLensDataset(to_input_data(df.iloc[test_size:]))
 
         if stage in ("test", "predict"):
-            self.test_dataset = MovieLensDataset(
-                *df.iloc[:test_size].to_dict(orient="list").values()
-            )
+            self.test_dataset = MovieLensDataset(to_input_data(df.iloc[:test_size]))
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(
