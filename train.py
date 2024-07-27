@@ -103,8 +103,6 @@ def main():
     # TODO: Add args=vars(args) to LitRecommender when it's implemented
     lit_model = lit_models.LitRecommender(model)
 
-    tb_logger = TensorBoardLogger("training/logs")
-
     if args.overfit_batches:
         if args.overfit_batches.is_integer():
             args.overfit_batches = int(args.overfit_batches)
@@ -112,7 +110,9 @@ def main():
         loss_to_log = "train_loss"
         enable_checkpointing = False
     else:
-        loss_to_log = "val_loss"
+        # TODO: Change when validation is implemented
+        loss_to_log = "train_loss"
+        # loss_to_log = "val_loss"
         enable_checkpointing = True
 
     early_stopping_callback = EarlyStopping(
@@ -137,12 +137,14 @@ def main():
         fast_dev_run=args.fast_dev_run,
         overfit_batches=args.overfit_batches,
         callbacks=callbacks,
-        logger=tb_logger,
+        logger=TensorBoardLogger("training/logs"),
         enable_checkpointing=enable_checkpointing,
     )
     trainer.fit(lit_model, datamodule=data)
     if not args.overfit_batches:
         trainer.test(lit_model, datamodule=data)
+        pred = trainer.predict(lit_model, datamodule=data)
+        logger.info("Predictions: %s", pred)
 
     best_model_path = model_checkpoint_callback.best_model_path
     if best_model_path:

@@ -1,9 +1,7 @@
 """ PyTorch Lightning data module for the MovieLens ratings data. """
 
 import warnings
-import zipfile
 from argparse import ArgumentParser
-from io import TextIOWrapper
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -13,6 +11,14 @@ from sklearn.preprocessing import LabelEncoder  # type: ignore
 from torch.utils.data import DataLoader
 
 from src.data.dataset import MovieLensDataset
+from src.data.utils import (
+    FILES_TO_EXTRACT,
+    ZIP_SAVE_PATH,
+    download_zip,
+    extract_files,
+    extracted_files_exist,
+    zip_exists,
+)
 from src.utils.log import logger
 
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -25,12 +31,6 @@ TEST_FRAC = 0.2
 class MovieLensDataModule(pl.LightningDataModule):
     """Lightning data module for the MovieLens ratings data."""
 
-    data_file_name: str = "ratings.csv"
-    train_dataset: MovieLensDataset
-    test_dataset: MovieLensDataset
-    user_label_encoder: LabelEncoder = LabelEncoder()
-    movie_label_encoder: LabelEncoder = LabelEncoder()
-
     def __init__(self, args: Optional[Dict] = None):
         super().__init__()
         args = args or {}
@@ -39,8 +39,10 @@ class MovieLensDataModule(pl.LightningDataModule):
         self.test_frac = args.get("test_frac", TEST_FRAC)
         self._validate_test_frac()
 
-        self._zip_file: Path = self.data_dirname() / "ml-latest.zip"
-        self._data_path: Path = self.data_dirname() / self.data_file_name
+        self.train_dataset: MovieLensDataset
+        self.test_dataset: MovieLensDataset
+        self.user_label_encoder: LabelEncoder = LabelEncoder()
+        self.movie_label_encoder: LabelEncoder = LabelEncoder()
 
     def _validate_test_frac(self):
         if not 0.05 < self.test_frac < 0.95:
@@ -49,7 +51,9 @@ class MovieLensDataModule(pl.LightningDataModule):
     @classmethod
     def data_dirname(cls) -> Path:
         """Return Path relative to where this script is stored."""
-        return Path(__file__).resolve().parents[2] / "data"
+        path = Path(__file__).resolve().parents[2] / "data"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
 
     @staticmethod
     def add_to_argparse(parser: ArgumentParser) -> ArgumentParser:
@@ -75,14 +79,20 @@ class MovieLensDataModule(pl.LightningDataModule):
         return parser
 
     @property
-    def zip_path(self) -> str:
-        """Return the path to the ratings data zip file."""
-        return str(self._zip_file)
-
-    @property
     def data_path(self) -> str:
         """Return the path to the ratings data."""
-        return str(self._data_path)
+        return str(
+            self.data_dirname()
+            / FILES_TO_EXTRACT["ml-latest/ratings.csv"].rsplit("/", maxsplit=1)[-1]
+        )
+
+    @property
+    def movie_path(self) -> str:
+        """Return the path to the movies metadata."""
+        return str(
+            self.data_dirname()
+            / FILES_TO_EXTRACT["ml-latest/movies.csv"].rsplit("/", maxsplit=1)[-1]
+        )
 
     def num_user_labels(self) -> int:
         """Return the number of unique users in the dataset."""
@@ -106,41 +116,39 @@ class MovieLensDataModule(pl.LightningDataModule):
 
     def prepare_data(self):
         """Download data and other preparation steps to be done only once."""
-        if self._data_path.exists():
-            logger.info("Using data already exctracted at %s", self._data_path)
+        if extracted_files_exist([self.data_path, self.movie_path]):
+            logger.info("Data is already downloaded and extracted.")
             return
 
-        with zipfile.ZipFile(self._zip_file, "r") as archive:
-            with archive.open(f"ml-latest/{self.data_file_name}", "r") as file:
-                logger.info("Writing data to %s...", self.data_path)
-                pd.read_csv(TextIOWrapper(file, "utf-8")).to_csv(
-                    self._data_path, index=False
-                )
+        if not zip_exists():
+            logger.info("Downloading MovieLens data to %s ...", ZIP_SAVE_PATH)
+            download_zip()
+        logger.info("Extracting data to %s ...", " ".join(FILES_TO_EXTRACT.values()))
+        extract_files(self.data_dirname())
 
     def setup(self, stage: str = ""):
         """Split the data into train and test sets and other setup steps to be done once per GPU."""
         dtypes = {"userId": "int32", "movieId": "int32", "rating": "float32"}
         df = (
-            pd.read_csv(self._data_path)
+            pd.read_csv(self.data_path)
             .sort_values(by="timestamp", ascending=False)[dtypes.keys()]
             .astype(dtypes)
+            .rename(columns={"userId": "user_id", "movieId": "movie_id"})
         )
 
-        df["user_label"] = self.user_label_encoder.fit_transform(df.userId)
-        df["movie_label"] = self.movie_label_encoder.fit_transform(df.movieId)
-        df = df[["user_label", "movie_label", "rating"]]
+        df["user_label"] = self.user_label_encoder.fit_transform(df["user_id"])
+        df["movie_label"] = self.movie_label_encoder.fit_transform(df["movie_id"])
 
         test_size = round(len(df) * self.test_frac)
 
-        if stage == "fit":
-            self.train_dataset = MovieLensDataset(
-                *df.iloc[test_size:].to_dict(orient="list").values()
-            )
+        def to_input_data(df: pd.DataFrame) -> Dict[str, list]:
+            return {str(k): list(v) for k, v in df.to_dict(orient="list").items()}
 
-        if stage == "test":
-            self.test_dataset = MovieLensDataset(
-                *df.iloc[:test_size].to_dict(orient="list").values()
-            )
+        if stage == "fit":
+            self.train_dataset = MovieLensDataset(to_input_data(df.iloc[test_size:]))
+
+        if stage in ("test", "predict"):
+            self.test_dataset = MovieLensDataset(to_input_data(df.iloc[:test_size]))
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(
@@ -157,3 +165,6 @@ class MovieLensDataModule(pl.LightningDataModule):
             shuffle=False,
             num_workers=self.num_workers,
         )
+
+    def predict_dataloader(self) -> DataLoader:
+        return self.test_dataloader()
