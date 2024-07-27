@@ -168,15 +168,17 @@ class LitRecommender(
             {
                 "user_label": user.cpu(),
                 "movie_label": all_movie_labels.cpu().numpy(),
-                "movie_id": self.trainer.datamodule.movie_label_encoder.inverse_transform(
-                    all_movie_labels.cpu().numpy()
+                "movie_id": (
+                    self.trainer.datamodule.movie_label_encoder.inverse_transform(  # type: ignore
+                        all_movie_labels.cpu().numpy()
+                    )
                 ),
                 "pred": preds.cpu().numpy(),
                 "seen": np.isin(all_movie_labels.cpu().numpy(), seen_movie_labels),
             }
         )
 
-        movie_meta = pd.read_csv(self.trainer.datamodule.movie_path)
+        movie_meta = pd.read_csv(self.trainer.datamodule.movie_path)  # type: ignore
         user_history = movie_meta[movie_meta["movieId"].isin(seen_movie_ids)]
         logger.info("User history:\n%s", user_history)
         top_5 = (
