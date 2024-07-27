@@ -85,6 +85,18 @@ class LitRecommender(
         self.training_step_losses.append(loss)
         return loss
 
+    def validation_step(
+        self, val_batch: Dict[str, torch.Tensor], batch_idx: Optional[int] = None
+    ) -> torch.Tensor:
+        """Validation step."""
+        y_pred = self(val_batch["user_label"], val_batch["movie_label"]).view(-1)
+        y_true = val_batch["rating"]
+
+        # Calculate loss
+        loss = self.mse(y_pred, y_true)
+        self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        return loss
+
     def test_step(
         self, test_batch: Dict[str, torch.Tensor], batch_idx: Optional[int] = None
     ) -> Dict[str, torch.Tensor]:

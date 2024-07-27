@@ -110,9 +110,7 @@ def main():
         loss_to_log = "train_loss"
         enable_checkpointing = False
     else:
-        # TODO: Change when validation is implemented
-        loss_to_log = "train_loss"
-        # loss_to_log = "val_loss"
+        loss_to_log = "val_loss"
         enable_checkpointing = True
 
     early_stopping_callback = EarlyStopping(
