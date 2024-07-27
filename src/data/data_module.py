@@ -25,10 +25,13 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 BATCH_SIZE = 32
 NUM_WORKERS = 0
-TEST_FRAC = 0.2
+VAL_FRAC = 0.1
+TEST_FRAC = 0.1
 
 
-class MovieLensDataModule(pl.LightningDataModule):
+class MovieLensDataModule(
+    pl.LightningDataModule
+):  # pylint: disable=too-many-instance-attributes
     """Lightning data module for the MovieLens ratings data."""
 
     def __init__(self, args: Optional[Dict] = None):
@@ -36,17 +39,24 @@ class MovieLensDataModule(pl.LightningDataModule):
         args = args or {}
         self.batch_size = args.get("batch_size", BATCH_SIZE)
         self.num_workers = args.get("num_workers", NUM_WORKERS)
+        self.val_frac = args.get("val_frac", VAL_FRAC)
         self.test_frac = args.get("test_frac", TEST_FRAC)
-        self._validate_test_frac()
+        self._validate_data_fractions()
 
         self.train_dataset: MovieLensDataset
+        self.val_dataset: MovieLensDataset
         self.test_dataset: MovieLensDataset
         self.user_label_encoder: LabelEncoder = LabelEncoder()
         self.movie_label_encoder: LabelEncoder = LabelEncoder()
 
-    def _validate_test_frac(self):
-        if not 0.05 < self.test_frac < 0.95:
-            raise ValueError("test_frac must be between 0.05 and 0.95")
+    def _validate_data_fractions(self):
+        """Ensure that the data fractions are valid."""
+        if not 0 < self.val_frac < 1.0:
+            raise ValueError("Validation fraction must be between 0 and 1.")
+        if not 0 < self.test_frac < 1.0:
+            raise ValueError("Test fraction must be between 0 and 1.")
+        if not 0 < self.val_frac + self.test_frac < 1.0:
+            raise ValueError("Validation and test fractions must sum to less than 1.0.")
 
     @classmethod
     def data_dirname(cls) -> Path:
@@ -69,6 +79,12 @@ class MovieLensDataModule(pl.LightningDataModule):
             type=int,
             default=NUM_WORKERS,
             help=f"Number of workers to use for data loading (default: {NUM_WORKERS})",
+        )
+        parser.add_argument(
+            "--val_frac",
+            type=float,
+            default=VAL_FRAC,
+            help=f"Fraction of data to use for validation (default: {VAL_FRAC})",
         )
         parser.add_argument(
             "--test_frac",
@@ -131,6 +147,7 @@ class MovieLensDataModule(pl.LightningDataModule):
         dtypes = {"userId": "int32", "movieId": "int32", "rating": "float32"}
         df = (
             pd.read_csv(self.data_path)
+            # TODO: Remove this line to get predictions working for new movies
             .sort_values(by="timestamp", ascending=False)[dtypes.keys()]
             .astype(dtypes)
             .rename(columns={"userId": "user_id", "movieId": "movie_id"})
@@ -139,22 +156,34 @@ class MovieLensDataModule(pl.LightningDataModule):
         df["user_label"] = self.user_label_encoder.fit_transform(df["user_id"])
         df["movie_label"] = self.movie_label_encoder.fit_transform(df["movie_id"])
 
-        test_size = round(len(df) * self.test_frac)
+        test_split = round(len(df) * self.test_frac)
+        val_split = round(len(df) * (self.test_frac + self.val_frac))
 
         def to_input_data(df: pd.DataFrame) -> Dict[str, list]:
             return {str(k): list(v) for k, v in df.to_dict(orient="list").items()}
 
         if stage == "fit":
-            self.train_dataset = MovieLensDataset(to_input_data(df.iloc[test_size:]))
+            self.train_dataset = MovieLensDataset(to_input_data(df.iloc[val_split:]))
+            self.val_dataset = MovieLensDataset(
+                to_input_data(df.iloc[test_split:val_split])
+            )
 
         if stage in ("test", "predict"):
-            self.test_dataset = MovieLensDataset(to_input_data(df.iloc[:test_size]))
+            self.test_dataset = MovieLensDataset(to_input_data(df.iloc[:test_split]))
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(
             self.train_dataset,
             batch_size=self.batch_size,
             shuffle=True,
+            num_workers=self.num_workers,
+        )
+
+    def val_dataloader(self) -> DataLoader:
+        return DataLoader(
+            self.val_dataset,
+            batch_size=self.batch_size,
+            shuffle=False,
             num_workers=self.num_workers,
         )
 
