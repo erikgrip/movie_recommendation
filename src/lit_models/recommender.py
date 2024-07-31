@@ -46,7 +46,6 @@ class LitRecommender(
             top_k=5, empty_target_action="skip", adaptive_k=True
         )
         self.recall: Metric = RetrievalRecall(top_k=5, empty_target_action="skip")
-        self.training_step_losses: list[torch.Tensor] = []
         self.predict_step_outputs: list[Dict[str, torch.Tensor]] = []
 
     @staticmethod
@@ -82,7 +81,6 @@ class LitRecommender(
 
         loss = self.mse(y_pred, y_true)
         self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
-        self.training_step_losses.append(loss)
         return loss
 
     def validation_step(
@@ -200,20 +198,6 @@ class LitRecommender(
         )
         logger.info("Top 5 recommendations:\n%s", top_5)
 
-    def on_train_end(self) -> None:
-        all_losses = torch.stack(self.training_step_losses)
-        logger.info(
-            "Avg loss first 5 training steps: %s",
-            round(torch.mean(all_losses[:5]).item(), 4),
-        )
-        logger.info(
-            "Avg loss last 5 training steps: %s",
-            round(torch.mean(all_losses[-5:]).item(), 4),
-        )
-        logger.info(
-            "Avg loss all training steps: %s", round(torch.mean(all_losses).item(), 4)
-        )
-        self.training_step_losses.clear()  # free memory
 
     def configure_optimizers(self) -> OptimizerLRSchedulerConfig:
         """Initialize optimizer and learning rate scheduler."""
