@@ -1,6 +1,7 @@
 __pycache__/
 **/tmp.*
 
+tmp/*
 data/*
 !data/README.md
 
