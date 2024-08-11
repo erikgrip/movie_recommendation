@@ -198,7 +198,6 @@ class LitRecommender(
         )
         logger.info("Top 5 recommendations:\n%s", top_5)
 
-
     def configure_optimizers(self) -> OptimizerLRSchedulerConfig:
         """Initialize optimizer and learning rate scheduler."""
         optimizer = self.optimizer_class(self.parameters(), lr=self.lr)  # type: ignore

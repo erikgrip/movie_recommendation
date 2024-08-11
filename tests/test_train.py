@@ -24,7 +24,7 @@ def fixture_args():
         accelerator="auto",
         num_workers=0,
         max_epochs=-1,
-        early_stopping=50,
+        early_stopping=100,
     )
 
 

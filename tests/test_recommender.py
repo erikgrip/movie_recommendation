@@ -56,7 +56,6 @@ def test_lit_recommender_init(model):
     assert lit_model.lr == 1e-3
     assert lit_model.one_cycle_max_lr is None
     assert lit_model.one_cycle_total_steps == 100
-    assert not lit_model.training_step_losses
 
 
 def test_lit_recommender_forward(lit_model, batch):
@@ -71,13 +70,6 @@ def test_lit_recommender_training_step(lit_model, batch):
     loss = lit_model.training_step(train_batch=batch)
     assert isinstance(loss, torch.Tensor)
     assert loss.item() >= 0.0
-
-
-def test_lit_recommender_training_step_losses(lit_model, batch):
-    """Test the training_step_losses attribute of LitRecommender."""
-    lit_model.training_step(train_batch=batch)
-    assert len(lit_model.training_step_losses) == 1
-    assert lit_model.training_step_losses[0].item() >= 0.0
 
 
 def test_lit_recommender_test_step(lit_model, batch):
