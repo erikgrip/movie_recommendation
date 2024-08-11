@@ -10,7 +10,7 @@ import pytorch_lightning as pl
 from sklearn.preprocessing import LabelEncoder  # type: ignore
 from torch.utils.data import DataLoader
 
-from src.data.dataset import MovieLensDataset
+from src.data.ratings_dataset import MovieLensDataset
 from src.data.utils import (
     FILES_TO_EXTRACT,
     ZIP_SAVE_PATH,
