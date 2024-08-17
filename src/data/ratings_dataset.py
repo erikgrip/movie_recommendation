@@ -23,6 +23,7 @@ class RatingsDataset(torch.utils.data.Dataset):
                 "rating": List[float],
             }
         """
+        super().__init__()
         self.data = data
         self._validate_data()
         self._length = len(self.data["user_label"])
