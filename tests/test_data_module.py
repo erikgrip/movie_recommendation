@@ -9,7 +9,7 @@ import pytest
 import torch
 from torch.utils.data import DataLoader
 
-from src.data.data_module import MovieLensDataModule
+from src.data.ratings_module import RatingsDataModule
 from tests.mocking import fixture_data_module
 
 
@@ -28,7 +28,7 @@ def test_init(
     expected_test_frac,
 ):
     """Test the initialization of MovieLensDataModule."""
-    data_module = MovieLensDataModule(args)
+    data_module = RatingsDataModule(args)
     mock_data_dir = data_module.data_dirname()
     assert data_module.data_path == str(mock_data_dir / "ratings.csv")
     assert data_module.val_frac == expected_val_frac
@@ -43,12 +43,12 @@ def test_init(
 def test_init_invalid_val_and_test_fraction(test_frac, val_frac):
     """Test initialization with invalid val and test fractions."""
     with pytest.raises(ValueError):
-        MovieLensDataModule(args={"test_frac": test_frac, "val_frac": val_frac})
+        RatingsDataModule(args={"test_frac": test_frac, "val_frac": val_frac})
 
 
 def test_num_labels_before_setup_raises_error():
     """Test that getting number of labels raise an error before setup."""
-    data_module = MovieLensDataModule()
+    data_module = RatingsDataModule()
     data_module.prepare_data()
     with pytest.raises(ValueError):
         data_module.num_user_labels()
@@ -58,7 +58,7 @@ def test_num_labels_before_setup_raises_error():
 
 def test_num_labels_after_prepare_data():
     """Test num_user_labels and num_movie_labels after setup."""
-    data_module = MovieLensDataModule()
+    data_module = RatingsDataModule()
     data_module.prepare_data()
     data_module.setup()
     assert data_module.num_user_labels() == 100
@@ -67,7 +67,7 @@ def test_num_labels_after_prepare_data():
 
 def test_prepare_data():
     """Test the prepare_data method."""
-    data_module = MovieLensDataModule()
+    data_module = RatingsDataModule()
     data_module.prepare_data()
     with open(data_module.data_path, "r", encoding="utf-8") as file:
         data = file.readlines()
@@ -77,7 +77,7 @@ def test_prepare_data():
 
 def test_prepare_data_already_exctracted():
     """Test the prepare_data method when the data is already extracted."""
-    data_module = MovieLensDataModule()
+    data_module = RatingsDataModule()
     with (
         patch("src.data.data_module.Path.exists") as mock_exists,
         patch("src.data.data_module.download_zip") as mock_zip,
@@ -96,9 +96,7 @@ def test_setup(
     val_frac, test_frac, expected_train_len, expected_val_len, expected_test_len
 ):
     """Test the setup method for different test fractions."""
-    data_module = MovieLensDataModule(
-        args={"val_frac": val_frac, "test_frac": test_frac}
-    )
+    data_module = RatingsDataModule(args={"val_frac": val_frac, "test_frac": test_frac})
     data_module.prepare_data()
 
     data_module.setup("fit")
@@ -137,7 +135,7 @@ def test_train_dataloader(
     args, expected_batch_size, expected_num_workers, expected_len
 ):
     """Test the train_dataloader method."""
-    data_module = MovieLensDataModule(args)
+    data_module = RatingsDataModule(args)
     data_module.prepare_data()
     data_module.setup("fit")
     train_dataloader = data_module.train_dataloader()
@@ -157,7 +155,7 @@ def test_train_dataloader(
 )
 def test_val_dataloader(args, expected_batch_size, expected_num_workers, expected_len):
     """Test the val_dataloader method."""
-    data_module = MovieLensDataModule(args)
+    data_module = RatingsDataModule(args)
     data_module.prepare_data()
     data_module.setup("fit")
     val_dataloader = data_module.val_dataloader()
@@ -177,7 +175,7 @@ def test_val_dataloader(args, expected_batch_size, expected_num_workers, expecte
 )
 def test_test_dataloader(args, expected_batch_size, expected_num_workers, expected_len):
     """Test the test_dataloader method."""
-    data_module = MovieLensDataModule(args)
+    data_module = RatingsDataModule(args)
     data_module.prepare_data()
     data_module.setup("test")
     test_dataloader = data_module.test_dataloader()

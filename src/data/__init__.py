@@ -2,4 +2,4 @@
 
 # pylint: disable=unused-import
 
-from src.data.data_module import MovieLensDataModule
+from src.data.ratings_module import RatingsDataModule

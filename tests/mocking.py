@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.data.data_module import MovieLensDataModule
+from src.data.ratings_module import RatingsDataModule
 
 MOCK_ZIP_PATH = "tests/fixtures/sample_100.zip"
 
@@ -24,4 +24,4 @@ def fixture_data_module():
         patch("src.data.utils.ZIP_SAVE_PATH", MOCK_ZIP_PATH),
     ):
         os.mkdir(tmpdir / "data")
-        yield MovieLensDataModule()
+        yield RatingsDataModule()

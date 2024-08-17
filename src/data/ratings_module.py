@@ -29,7 +29,7 @@ VAL_FRAC = 0.1
 TEST_FRAC = 0.1
 
 
-class MovieLensDataModule(
+class RatingsDataModule(
     pl.LightningDataModule
 ):  # pylint: disable=too-many-instance-attributes
     """Lightning data module for the MovieLens ratings data."""
@@ -177,6 +177,7 @@ class MovieLensDataModule(
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_workers,
+            pin_memory=True,
         )
 
     def val_dataloader(self) -> DataLoader:
