@@ -10,7 +10,7 @@ import pytorch_lightning as pl
 from sklearn.preprocessing import LabelEncoder  # type: ignore
 from torch.utils.data import DataLoader
 
-from src.data.ratings_dataset import MovieLensDataset
+from src.data.ratings_dataset import RatingsDataset
 from src.data.utils import (
     FILES_TO_EXTRACT,
     ZIP_SAVE_PATH,
@@ -43,9 +43,9 @@ class RatingsDataModule(
         self.test_frac = args.get("test_frac", TEST_FRAC)
         self._validate_data_fractions()
 
-        self.train_dataset: MovieLensDataset
-        self.val_dataset: MovieLensDataset
-        self.test_dataset: MovieLensDataset
+        self.train_dataset: RatingsDataset
+        self.val_dataset: RatingsDataset
+        self.test_dataset: RatingsDataset
         self.user_label_encoder: LabelEncoder = LabelEncoder()
         self.movie_label_encoder: LabelEncoder = LabelEncoder()
 
