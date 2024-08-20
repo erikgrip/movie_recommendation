@@ -1,5 +1,27 @@
 import pandas as pd
 
+GENRES = [
+    "action",
+    "adventure",
+    "animation",
+    "children",
+    "comedy",
+    "crime",
+    "documentary",
+    "drama",
+    "fantasy",
+    "film_noir",
+    "horror",
+    "imax",
+    "musical",
+    "mystery",
+    "romance",
+    "sci_fi",
+    "thriller",
+    "war",
+    "western",
+]
+
 
 def movie_genres_to_list(genres: pd.Series) -> pd.Series:
     """Converts the genres column to a list of genres."""
@@ -35,3 +57,123 @@ def impute_missing_year(movies: pd.DataFrame, ratings: pd.DataFrame) -> pd.DataF
     movies.loc[mask, "year"] = movies.loc[mask, "movie_id"].map(year_first_rated)
     movies["year"] = movies["year"].astype("int")
     return movies
+
+
+def genre_dummies(movies: pd.DataFrame) -> pd.DataFrame:
+    """Extracts dummy features from movie dataframe `genres` column.
+
+    Returns a new dataframe with the movie_id and dummy columns for each genre.
+    """
+    dummies = (
+        movies["genres"]
+        .str.get_dummies(sep="|")
+        .drop(columns="(no genres listed)")
+        .rename(columns=lambda x: x.lower().replace("-", "_"))
+    )
+    return pd.concat([movies["movie_id"], dummies], axis=1)
+
+
+def user_genre_fractions(
+    ratings: pd.DataFrame, movie_genre_dummies: pd.DataFrame
+) -> pd.DataFrame:
+    """Calculates the fraction of each genre a user has watched at each point in time.
+
+    Example:
+    Input ratings:
+    user_id  movie_id  rating   datetime
+    1        1         5        2021-01-01 10:00:00
+    1        2         4        2021-01-20 13:00:00
+    1        3         3        2021-02-05 15:00:00
+    1        4         2        2021-02-10 09:00:00
+    2        3         4        2021-01-05 10:00:00
+    2        1         4        2021-03-02 10:00:00
+
+    Input movie_genres:
+    movie_id  action comedy ...
+    1         1      0
+    2         0      1
+    3         1      0
+    4         0      0
+
+
+    Returns:
+    user_id  datetime             frac_action   frac_comedy ...
+    1        2021-01-01 10:00:00  0.0           0.0
+    1        2021-01-20 13:00:00  1.0           0.0
+    1        2021-02-05 15:00:00  0.5           0.5
+    1        2021-02-10 09:00:00  0.67          0.33
+    2        2021-01-05 10:00:00  0.0           0.0
+    2        2021-03-02 10:00:00  0.0           1.0
+    """
+    df = ratings.merge(movie_genre_dummies, on="movie_id")
+
+    # Add genre even if it wasn't watched
+    for genre in GENRES:
+        if genre not in df.columns:
+            df[genre] = 0
+
+    g = df.groupby("user_id")
+    frac = (
+        g[GENRES].cumsum().shift(1).fillna(0).div(range(0, len(df)), axis=0).fillna(0)
+    )
+    frac.columns = [f"frac_{col}" for col in frac.columns]
+    return pd.concat([df[["user_id", "datetime"]], frac], axis=1)
+
+
+def user_genre_avg_ratings(
+    ratings: pd.DataFrame, movie_genre_dummies: pd.DataFrame
+) -> pd.DataFrame:
+    """Calculates the average rating a user has given to each genre at each point in time.
+
+    Has 3 as initial value for each genre.
+
+    Example:
+    Input ratings:
+    user_id  movie_id  rating   datetime
+    1        1         5        2021-01-01 10:00:00
+    1        2         4        2021-01-20 13:00:00
+    1        3         3        2021-02-05 15:00:00
+    1        4         2        2021-02-10 09:00:00
+    2        3         4        2021-01-05 10:00:00
+    2        1         4        2021-03-02 10:00:00
+
+    Input movie_genres:
+    movie_id  action comedy ...
+    1         1      0
+    2         0      1
+    3         1      0
+    4         0      0
+
+    Returns:
+    user_id  datetime             avg_rating_action avg_rating_comedy ...
+    1        2021-01-01 10:00:00  3.0               3.0
+    1        2021-01-20 13:00:00  5.0               3.0
+    1        2021-02-05 15:00:00  5.0               4.0
+    1        2021-02-10 09:00:00  4.0               4.0
+    2        2021-01-05 10:00:00  3.0               3.0
+    2        2021-03-02 10:00:00  3.0               4.0
+    """
+    df = ratings.merge(movie_genre_dummies, on="movie_id")
+
+    # Add genre even if it wasn't watched
+    for genre in GENRES:
+        if genre not in df.columns:
+            df[genre] = 0
+
+    genre_ratings = (
+        df.groupby("user_id")
+        .apply(lambda x: x[GENRES].multiply(x["rating"], axis=0))
+        .copy()
+        .reset_index(level=0)
+    )
+
+    avg = (
+        genre_ratings.groupby("user_id")
+        .cumsum()
+        .div(df.groupby("user_id")[GENRES].cumsum(), axis=0)
+        .shift(1)
+        .fillna(3)
+    )
+    avg.columns = [f"avg_rating_{col}" for col in avg.columns]
+
+    return pd.concat([df[["user_id", "datetime"]], avg], axis=1)

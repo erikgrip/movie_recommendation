@@ -134,17 +134,29 @@ class FeaturesDataModule(
         col_rename = {"movieId": "movie_id", "userId": "user_id"}
         ratings = pd.read_csv(self.data_path).rename(columns=col_rename)
         movies = pd.read_csv(self.movie_path).rename(columns=col_rename)
+        print(movies.head())
         ratings["datetime"] = pd.to_datetime(ratings["timestamp"], unit="s")
-        # Drop movies never rated
-        movies = movies[movies["movie_id"].isin(ratings["movie_id"])]
+        genre_dummies = features.genre_dummies(movies)
 
-        movies["genres"] = features.movie_genres_to_list(movies["genres"])
-        movies["year"] = features.extract_movie_release_year(movies["title"])
-        movies = features.impute_missing_year(movies, ratings)
-        movies["title"] = features.clean_movie_titles(movies["title"])
+        # Only keep movies that have been rated
+        movie_ft = movies[movies["movie_id"].isin(ratings["movie_id"])].copy()
+        del movies
+
+        logger.info("Creating movie features ...")
+        print(movie_ft.head())
+        movie_ft["genres"] = features.movie_genres_to_list(movie_ft["genres"])
+        movie_ft["year"] = features.extract_movie_release_year(movie_ft["title"])
+        movie_ft = features.impute_missing_year(movie_ft, ratings)
+        movie_ft["title"] = features.clean_movie_titles(movie_ft["title"])
+
+        logger.info("Creating user features ...")
+        user_genre_fractions = features.user_genre_fractions(ratings, genre_dummies)
+        user_genre_avg_ratings = features.user_genre_avg_ratings(ratings, genre_dummies)
+        user_ft = pd.concat([user_genre_fractions, user_genre_avg_ratings], axis=1)
 
         print(ratings.head())
-        print(movies.head())
+        print(user_ft.head())
+        print(movie_ft.head())
 
         # Save the featureized data
 
