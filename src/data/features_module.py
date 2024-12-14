@@ -11,16 +11,8 @@ from sklearn.preprocessing import LabelEncoder  # type: ignore
 from torch.utils.data import DataLoader
 
 from src.data.features_dataset import FeaturesDataset
-from src.data.utils import (
-    FILES_TO_EXTRACT,
-    ZIP_SAVE_PATH,
-    download_zip,
-    extract_files,
-    extracted_files_exist,
-    zip_exists,
-)
-from src.utils.log import logger
 from src.utils import features
+from src.utils.log import logger
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -44,6 +36,9 @@ class FeaturesDataModule(
         self.test_frac = args.get("test_frac", TEST_FRAC)
         self._validate_data_fractions()
 
+        self.movie_features_path: Path
+        self.user_features_path: Path
+
         self.train_dataset: FeaturesDataset
         self.val_dataset: FeaturesDataset
         self.test_dataset: FeaturesDataset
@@ -65,7 +60,7 @@ class FeaturesDataModule(
             raise ValueError("Validation and test fractions must sum to less than 1.0.")
 
     @classmethod
-    def data_dirname(cls) -> Path:
+    def data_path(cls) -> Path:
         """Return Path relative to where this script is stored."""
         path = Path(__file__).resolve().parents[2] / "data"
         path.mkdir(parents=True, exist_ok=True)
@@ -100,65 +95,60 @@ class FeaturesDataModule(
         )
         return parser
 
-    @property
-    def data_path(self) -> str:
-        """Return the path to the ratings data."""
-        return str(
-            self.data_dirname()
-            / FILES_TO_EXTRACT["ml-latest/ratings.csv"].rsplit("/", maxsplit=1)[-1]
-        )
+    def _movie_features(
+        self, movies: pd.DataFrame, ratings: pd.DataFrame
+    ) -> pd.DataFrame:
+        """Create movie features."""
+        logger.info("Creating movie features ...")
+        movies["genres"] = features.movie_genres_to_list(movies["genres"])
+        movies["year"] = features.extract_movie_release_year(movies["title"])
+        movies = features.impute_missing_year(movies, ratings)
+        movies["title"] = features.clean_movie_titles(movies["title"])
+        return movies
 
-    @property
-    def movie_path(self) -> str:
-        """Return the path to the movies metadata."""
-        return str(
-            self.data_dirname()
-            / FILES_TO_EXTRACT["ml-latest/movies.csv"].rsplit("/", maxsplit=1)[-1]
-        )
+    def _user_features(
+        self, movies: pd.DataFrame, ratings: pd.DataFrame
+    ) -> pd.DataFrame:
+        """Create user features."""
+        logger.info("Creating user features ...")
+        genre_dummies = features.genre_dummies(movies)
+        return features.user_genre_avg_ratings(ratings, genre_dummies)
 
     def prepare_data(self):
         """Download data and other preparation steps to be done only once."""
         # Download and extract the data if it doesn't exist
-        if extracted_files_exist([self.data_path, self.movie_path]):
-            logger.info("Data is already downloaded and extracted.")
-        else:
-            if not zip_exists():
-                logger.info("Downloading MovieLens data to %s ...", ZIP_SAVE_PATH)
-                download_zip()
-            logger.info(
-                "Extracting data to %s ...", " ".join(FILES_TO_EXTRACT.values())
-            )
-            extract_files(self.data_dirname())
 
-        # Create user and movie feature dataframes
+        # Load data
         col_rename = {"movieId": "movie_id", "userId": "user_id"}
-        ratings = pd.read_csv(self.data_path).rename(columns=col_rename)
-        movies = pd.read_csv(self.movie_path).rename(columns=col_rename)
-        print(movies.head())
+        movies = pd.read_csv("data/processed/movies.parquet").rename(columns=col_rename)
+        ratings = pd.read_csv("data/processed/ratings.parquet").rename(
+            columns=col_rename
+        )
+
+        # ---------------------
+        # TODO: Drop sampling down
+        sample_users = ratings["user_id"].sample(frac=0.01, random_state=42)
+        ratings = ratings[ratings["user_id"].isin(sample_users)]
+        movies = movies[movies["movie_id"].isin(ratings["movie_id"])]
+        # ---------------------
+
         ratings["datetime"] = pd.to_datetime(ratings["timestamp"], unit="s")
-        genre_dummies = features.genre_dummies(movies)
 
         # Only keep movies that have been rated
-        movie_ft = movies[movies["movie_id"].isin(ratings["movie_id"])].copy()
-        del movies
+        movies = movies[movies["movie_id"].isin(ratings["movie_id"])].copy()
 
-        logger.info("Creating movie features ...")
-        print(movie_ft.head())
-        movie_ft["genres"] = features.movie_genres_to_list(movie_ft["genres"])
-        movie_ft["year"] = features.extract_movie_release_year(movie_ft["title"])
-        movie_ft = features.impute_missing_year(movie_ft, ratings)
-        movie_ft["title"] = features.clean_movie_titles(movie_ft["title"])
+        movie_ft = self._movie_features(movies, ratings)
+        user_ft = self._user_features(movies, ratings)
+        del movies, ratings
 
-        logger.info("Creating user features ...")
-        user_genre_fractions = features.user_genre_fractions(ratings, genre_dummies)
-        user_genre_avg_ratings = features.user_genre_avg_ratings(ratings, genre_dummies)
-        user_ft = pd.concat([user_genre_fractions, user_genre_avg_ratings], axis=1)
+        logger.info("Saving features data ...")
+        output_dir = self.data_path() / "features_data_module"
+        output_dir.mkdir(exist_ok=True)
 
-        print(ratings.head())
-        print(user_ft.head())
-        print(movie_ft.head())
-
-        # Save the featureized data
+        self.movie_features_path = output_dir / "movie_features.parquet"
+        self.user_features_path = output_dir / "user_features.parquet"
+        movie_ft.to_parquet(self.movie_features_path, index=False)
+        user_ft.to_parquet(self.user_features_path, index=False)
 
     def setup(self, stage: str = ""):
         """Split the data into train and test sets and other setup steps to be done once per GPU."""
@@ -181,13 +171,15 @@ class FeaturesDataModule(
             return {str(k): list(v) for k, v in df.to_dict(orient="list").items()}
 
         if stage == "fit":
-            self.train_dataset = MovieLensDataset(to_input_data(df.iloc[val_split:]))
-            self.val_dataset = MovieLensDataset(
+            self.train_dataset = FeaturesDataset(
+                to_input_data(df.iloc[val_split:])
+            )
+            self.val_dataset = FeaturesDataset(
                 to_input_data(df.iloc[test_split:val_split])
             )
 
         if stage in ("test", "predict"):
-            self.test_dataset = MovieLensDataset(to_input_data(df.iloc[:test_split]))
+            self.test_dataset = FeaturesDataset(to_input_data(df.iloc[:test_split]))
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(

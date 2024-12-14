@@ -8,11 +8,10 @@ class FeaturesDataset(torch.utils.data.Dataset):
     A dataset with the rating user and movie features.
     """
 
-
     def __init__(self, data: dict[str, list]):
         """
         Initializes the MovieLensDataset.
-        
+
         Args:
             data (dict[str, list]):
             {
@@ -25,7 +24,6 @@ class FeaturesDataset(torch.utils.data.Dataset):
                 "rating": List[float],
             }
         """
-
 
     def __len__(self) -> int:
         """
