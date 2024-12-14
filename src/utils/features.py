@@ -159,21 +159,18 @@ def user_genre_avg_ratings(
     for genre in GENRES:
         if genre not in df.columns:
             df[genre] = 0
-
-    genre_ratings = (
-        df.groupby("user_id")
-        .apply(lambda x: x[GENRES].multiply(x["rating"], axis=0))
-        .copy()
-        .reset_index(level=0)
-    )
-
     avg = (
-        genre_ratings.groupby("user_id")
-        .cumsum()
+        (
+            pd.concat(
+                [df[["user_id"]].copy(), df[GENRES].multiply(df["rating"], axis=0)],
+                axis=1,
+            )
+            .groupby("user_id")
+            .cumsum()
+        )
         .div(df.groupby("user_id")[GENRES].cumsum(), axis=0)
         .shift(1)
         .fillna(3)
     )
     avg.columns = [f"avg_rating_{col}" for col in avg.columns]
-
     return pd.concat([df[["user_id", "datetime"]], avg], axis=1)
