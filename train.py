@@ -12,7 +12,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from src import lit_models
 from src.utils.log import logger
 
-DEFAULT_DATA_CLASS = "MovieLensDataModule"
+DEFAULT_DATA_CLASS = "RatingsDataModule"
 DEFAULT_MODEL_CLASS = "RecommendationModel"
 DEFAULT_EARLY_STOPPING = 10
 
