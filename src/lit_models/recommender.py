@@ -188,6 +188,7 @@ class LitRecommender(
             }
         )
 
+        # TODO: ratings data module missing movie_path
         movie_meta = pd.read_csv(self.trainer.datamodule.movie_path)  # type: ignore
         user_history = movie_meta[movie_meta["movieId"].isin(seen_movie_ids)]
         logger.info("User history:\n%s", user_history)
