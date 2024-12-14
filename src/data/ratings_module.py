@@ -11,15 +11,6 @@ from sklearn.preprocessing import LabelEncoder  # type: ignore
 from torch.utils.data import DataLoader
 
 from src.data.ratings_dataset import RatingsDataset
-from src.data.utils import (
-    FILES_TO_EXTRACT,
-    ZIP_SAVE_PATH,
-    download_zip,
-    extract_files,
-    extracted_files_exist,
-    zip_exists,
-)
-from src.utils.log import logger
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -97,18 +88,7 @@ class RatingsDataModule(
     @property
     def data_path(self) -> str:
         """Return the path to the ratings data."""
-        return str(
-            self.data_dirname()
-            / FILES_TO_EXTRACT["ml-latest/ratings.csv"].rsplit("/", maxsplit=1)[-1]
-        )
-
-    @property
-    def movie_path(self) -> str:
-        """Return the path to the movies metadata."""
-        return str(
-            self.data_dirname()
-            / FILES_TO_EXTRACT["ml-latest/movies.csv"].rsplit("/", maxsplit=1)[-1]
-        )
+        return str(self.data_dirname() / "extracted/ratings.csv")
 
     def num_user_labels(self) -> int:
         """Return the number of unique users in the dataset."""
@@ -132,15 +112,10 @@ class RatingsDataModule(
 
     def prepare_data(self):
         """Download data and other preparation steps to be done only once."""
-        if extracted_files_exist([self.data_path, self.movie_path]):
-            logger.info("Data is already downloaded and extracted.")
-            return
-
-        if not zip_exists():
-            logger.info("Downloading MovieLens data to %s ...", ZIP_SAVE_PATH)
-            download_zip()
-        logger.info("Extracting data to %s ...", " ".join(FILES_TO_EXTRACT.values()))
-        extract_files(self.data_dirname())
+        if not Path(self.data_path).exists():
+            raise FileNotFoundError(
+                f"File {self.data_path} not found. Please run `python src/data/download_dataset.py`."
+            )
 
     def setup(self, stage: str = ""):
         """Split the data into train and test sets and other setup steps to be done once per GPU."""
@@ -163,13 +138,13 @@ class RatingsDataModule(
             return {str(k): list(v) for k, v in df.to_dict(orient="list").items()}
 
         if stage == "fit":
-            self.train_dataset = MovieLensDataset(to_input_data(df.iloc[val_split:]))
-            self.val_dataset = MovieLensDataset(
+            self.train_dataset = RatingsDataset(to_input_data(df.iloc[val_split:]))
+            self.val_dataset = RatingsDataset(
                 to_input_data(df.iloc[test_split:val_split])
             )
 
         if stage in ("test", "predict"):
-            self.test_dataset = MovieLensDataset(to_input_data(df.iloc[:test_split]))
+            self.test_dataset = RatingsDataset(to_input_data(df.iloc[:test_split]))
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(
