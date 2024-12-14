@@ -1,5 +1,6 @@
 """ PyTorch Lightning data module for the MovieLens ratings data. """
 
+import os
 import warnings
 from argparse import ArgumentParser
 from pathlib import Path
@@ -116,18 +117,28 @@ class FeaturesDataModule(
 
     def prepare_data(self):
         """Download data and other preparation steps to be done only once."""
-        # Download and extract the data if it doesn't exist
+        features_dir = self.data_path() / "features_data_module"
+        os.makedirs(features_dir, exist_ok=True)
+
+        if (features_dir / "movie_features.parquet").exists() and (
+            features_dir / "user_features.parquet"
+        ).exists():
+            logger.info("Features data already exists. Skipping preparation.")
+            return
 
         # Load data
         col_rename = {"movieId": "movie_id", "userId": "user_id"}
-        movies = pd.read_csv("data/processed/movies.parquet").rename(columns=col_rename)
-        ratings = pd.read_csv("data/processed/ratings.parquet").rename(
+        movies = pd.read_csv(self.data_path() / "extracted/movies.csv").rename(
+            columns=col_rename
+        )
+        ratings = pd.read_csv(self.data_path() / "extracted/ratings.csv").rename(
             columns=col_rename
         )
 
         # ---------------------
         # TODO: Drop sampling down
-        sample_users = ratings["user_id"].sample(frac=0.01, random_state=42)
+        logger.info("Sampling data ...")
+        sample_users = ratings["user_id"].unique()[:1_000]
         ratings = ratings[ratings["user_id"].isin(sample_users)]
         movies = movies[movies["movie_id"].isin(ratings["movie_id"])]
         # ---------------------
@@ -154,7 +165,7 @@ class FeaturesDataModule(
         """Split the data into train and test sets and other setup steps to be done once per GPU."""
         dtypes = {"userId": "int32", "movieId": "int32", "rating": "float32"}
         df = (
-            pd.read_csv(self.data_path)
+            pd.read_csv(self.data_path() / "extracted/ratings.csv")
             # TODO: Remove this line to get predictions working for new movies
             .sort_values(by="timestamp", ascending=False)[dtypes.keys()]
             .astype(dtypes)
@@ -171,9 +182,7 @@ class FeaturesDataModule(
             return {str(k): list(v) for k, v in df.to_dict(orient="list").items()}
 
         if stage == "fit":
-            self.train_dataset = FeaturesDataset(
-                to_input_data(df.iloc[val_split:])
-            )
+            self.train_dataset = FeaturesDataset(to_input_data(df.iloc[val_split:]))
             self.val_dataset = FeaturesDataset(
                 to_input_data(df.iloc[test_split:val_split])
             )

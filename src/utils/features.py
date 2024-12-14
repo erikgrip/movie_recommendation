@@ -67,7 +67,7 @@ def genre_dummies(movies: pd.DataFrame) -> pd.DataFrame:
     dummies = (
         movies["genres"]
         .str.get_dummies(sep="|")
-        .drop(columns="(no genres listed)")
+        .drop(columns="(no genres listed)", errors="ignore")
         .rename(columns=lambda x: x.lower().replace("-", "_"))
     )
     return pd.concat([movies["movie_id"], dummies], axis=1)

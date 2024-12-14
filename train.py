@@ -82,7 +82,7 @@ def main():
         --devices=0 \
         --num_workers=20
         --model_class=RecommendationModel \
-        --data_class=MovieLensDataModule
+        --data_class=RatingsDataModule
     ```
     """
     parser = _setup_parser()
