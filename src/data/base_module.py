@@ -20,6 +20,7 @@ TEST_FRAC = 0.1
 class BaseDataModule(pl.LightningDataModule):
     """Base DataModule class for MovieLens data."""
 
+    # pylint: disable=too-many-instance-attributes
     def __init__(self, args: Optional[Dict] = None):
         super().__init__()
         args = args or {}

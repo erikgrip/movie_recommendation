@@ -29,10 +29,8 @@ class FeaturesDataset(torch.utils.data.Dataset):
         """
         Returns the number of samples in the dataset.
         """
-        pass
 
     def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
         """
         Returns a sample from the dataset at the given index.
         """
-        pass

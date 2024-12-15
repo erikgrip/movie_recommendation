@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Dict, Optional
 
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder  # type: ignore
 
 from src.data.base_module import BaseDataModule
 from src.data.features_dataset import FeaturesDataset
@@ -33,8 +32,6 @@ class FeaturesDataModule(BaseDataModule):
         # self.tokenizer = transformers.BertTokenizer.from_pretrained(
         #     "bert-base-multilingual-cased"
         # )
-        self.user_label_encoder: LabelEncoder = LabelEncoder()
-        self.movie_label_encoder: LabelEncoder = LabelEncoder()
 
     def _movie_features(
         self, movies: pd.DataFrame, ratings: pd.DataFrame
@@ -103,29 +100,5 @@ class FeaturesDataModule(BaseDataModule):
 
     def setup(self, stage: str = ""):
         """Split the data into train and test sets and other setup steps to be done once per GPU."""
-        dtypes = {"userId": "int32", "movieId": "int32", "rating": "float32"}
-        df = (
-            pd.read_csv(self.data_dir() / "extracted/ratings.csv")
-            # TODO: Remove this line to get predictions working for new movies
-            .sort_values(by="timestamp", ascending=False)[dtypes.keys()]
-            .astype(dtypes)
-            .rename(columns={"userId": "user_id", "movieId": "movie_id"})
-        )
-
-        df["user_label"] = self.user_label_encoder.fit_transform(df["user_id"])
-        df["movie_label"] = self.movie_label_encoder.fit_transform(df["movie_id"])
-
-        test_split = round(len(df) * self.test_frac)
-        val_split = round(len(df) * (self.test_frac + self.val_frac))
-
-        def to_input_data(df: pd.DataFrame) -> Dict[str, list]:
-            return {str(k): list(v) for k, v in df.to_dict(orient="list").items()}
-
-        if stage == "fit":
-            self.train_dataset = FeaturesDataset(to_input_data(df.iloc[val_split:]))
-            self.val_dataset = FeaturesDataset(
-                to_input_data(df.iloc[test_split:val_split])
-            )
-
-        if stage in ("test", "predict"):
-            self.test_dataset = FeaturesDataset(to_input_data(df.iloc[:test_split]))
+        # TODO: Implement
+        raise NotImplementedError("Setup is not implemented for FeaturesDataModule.")
