@@ -11,6 +11,7 @@ from sklearn.preprocessing import LabelEncoder  # type: ignore
 from torch.utils.data import DataLoader
 
 from src.data.ratings_dataset import RatingsDataset
+from src.utils.log import logger
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -86,9 +87,15 @@ class RatingsDataModule(
         return parser
 
     @property
-    def data_path(self) -> str:
+    def rating_data_path(self) -> str:
         """Return the path to the ratings data."""
         return str(self.data_dirname() / "extracted/ratings.csv")
+
+    @property
+    def movie_data_path(self) -> str:
+        """Return the path to the movies data."""
+        # Needed only for the predict method
+        return str(self.data_dirname() / "extracted/movies.csv")
 
     def num_user_labels(self) -> int:
         """Return the number of unique users in the dataset."""
@@ -112,21 +119,28 @@ class RatingsDataModule(
 
     def prepare_data(self):
         """Download data and other preparation steps to be done only once."""
-        if not Path(self.data_path).exists():
+        if not Path(self.rating_data_path).exists():
             raise FileNotFoundError(
-                f"File {self.data_path} not found. Please run `python src/data/download_dataset.py`."
+                f"File {self.rating_data_path} not found. Please run `python src/data/download_dataset.py`."
             )
 
     def setup(self, stage: str = ""):
         """Split the data into train and test sets and other setup steps to be done once per GPU."""
         dtypes = {"userId": "int32", "movieId": "int32", "rating": "float32"}
         df = (
-            pd.read_csv(self.data_path)
+            pd.read_csv(self.rating_data_path)
             # TODO: Remove this line to get predictions working for new movies
             .sort_values(by="timestamp", ascending=False)[dtypes.keys()]
             .astype(dtypes)
             .rename(columns={"userId": "user_id", "movieId": "movie_id"})
         )
+
+        # ---------------------
+        # TODO: Drop sampling down
+        logger.info("Downsampling data ...")
+        sample_users = df["user_id"].unique()[:100]
+        df = df[df["user_id"].isin(sample_users)]
+        # ---------------------
 
         df["user_label"] = self.user_label_encoder.fit_transform(df["user_id"])
         df["movie_label"] = self.movie_label_encoder.fit_transform(df["movie_id"])
