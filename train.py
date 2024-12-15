@@ -141,8 +141,7 @@ def main():
     trainer.fit(lit_model, datamodule=data)
     if not args.overfit_batches:
         trainer.test(lit_model, datamodule=data)
-        pred = trainer.predict(lit_model, datamodule=data)
-        logger.info("Predictions: %s", pred)
+        trainer.predict(lit_model, datamodule=data)
 
     best_model_path = model_checkpoint_callback.best_model_path
     if best_model_path:
