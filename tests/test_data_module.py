@@ -29,7 +29,7 @@ def test_init(
 ):
     """Test the initialization of MovieLensDataModule."""
     data_module = RatingsDataModule(args)
-    mock_data_dir = data_module.data_dirname()
+    mock_data_dir = data_module.data_dir()
     assert data_module.rating_data_path == str(mock_data_dir / "ratings.csv")
     assert data_module.val_frac == expected_val_frac
     assert data_module.test_frac == expected_test_frac
