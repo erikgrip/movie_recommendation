@@ -6,13 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.data.utils import (
-    FILES_TO_EXTRACT,
-    download_zip,
-    extract_files,
-    extracted_files_exist,
-    zip_exists,
-)
+from prepare_data.download_dataset import download_zip, extract_files, EXTRACTED_FILES
 
 
 @pytest.fixture(scope="function", name="zip_save_path")
@@ -20,7 +14,7 @@ def mock_zip_save_path(tmp_path_factory):
     """Fixture to create a mock zip file and return its path."""
     zip_file_path = tmp_path_factory.mktemp("data").joinpath("ml-latest.zip")
     with zipfile.ZipFile(zip_file_path, "w") as zip_file:
-        for zip_path in FILES_TO_EXTRACT:
+        for zip_path in EXTRACTED_FILES:
             zip_file.writestr(zip_path, f"Mock zip file: {zip_path}")
 
     return zip_file_path
@@ -31,7 +25,7 @@ def fixture_mock_extracted_files(tmp_path_factory):
     """Fixture to create mock extracted files and return their paths."""
     extracted_files = {
         k: tmp_path_factory.mktemp("data").joinpath(v)
-        for k, v in FILES_TO_EXTRACT.items()
+        for k, v in EXTRACTED_FILES.items()
     }
 
     for save_path in extracted_files.values():
@@ -50,23 +44,12 @@ def test_download_zip(tmp_path, monkeypatch):
             file.write("Mock zip file")
 
     monkeypatch.setattr("src.data.utils.urlretrieve", mock_urlretrieve)
-    download_zip()
+    download_zip("some_url", tmp_save_path)
 
     assert tmp_save_path.exists()
     assert tmp_save_path.read_text() == "Mock zip file"
 
 
-def test_zip_exists(zip_save_path):
-    """Test the zip_exists function."""
-    with patch("src.data.utils.ZIP_SAVE_PATH", zip_save_path):
-        assert zip_exists() is True
-
-
-def test_zip_exists_when_zip_file_does_not_exist(zip_save_path):
-    """Test the zip_exists function when the zip file does not exist."""
-    with patch("src.data.utils.ZIP_SAVE_PATH", zip_save_path):
-        os.remove(zip_save_path)
-        assert zip_exists() is False
 
 
 def test_extract_files(tmp_path, zip_save_path):
@@ -76,7 +59,7 @@ def test_extract_files(tmp_path, zip_save_path):
     with patch("src.data.utils.ZIP_SAVE_PATH", zip_save_path):
         extract_files(tmp_path)
 
-    for save_path in FILES_TO_EXTRACT.values():
+    for save_path in EXTRACTED_FILES.values():
         assert tmp_path.joinpath(save_path).exists()
 
 
