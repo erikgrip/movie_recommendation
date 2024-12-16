@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from pytorch_lightning import Trainer
 
-from tests.mocking import fixture_data_module
+from tests.mocking import fixture_ratings_data_module
 from train import main
 
 
@@ -16,7 +16,7 @@ from train import main
 def fixture_args():
     """Return arguments to overfit batches."""
     return argparse.Namespace(
-        data_class="MovieLensDataModule",
+        data_class="RatingsDataModule",
         model_class="RecommendationModel",
         overfit_batches=0.0,
         fast_dev_run=0,

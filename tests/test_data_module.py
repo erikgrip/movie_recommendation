@@ -10,7 +10,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from src.data.ratings_module import RatingsDataModule
-from tests.mocking import fixture_data_module
+from tests.mocking import fixture_ratings_data_module
 
 
 @pytest.mark.parametrize(

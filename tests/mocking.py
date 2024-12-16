@@ -12,16 +12,15 @@ from src.data.ratings_module import RatingsDataModule
 MOCK_ZIP_PATH = "tests/fixtures/sample_100.zip"
 
 
-@pytest.fixture(name="data_module", autouse=True)
-def fixture_data_module():
-    """Create a MovieLensDataModule instance with a temporary data directory."""
+@pytest.fixture(name="ratings_data_module", autouse=True)
+def fixture_ratings_data_module():
+    """Create a RatingsDataModule instance with a temporary data directory."""
     tmpdir = Path(tempfile.mkdtemp())
     with (
         patch(
-            "src.data.data_module.MovieLensDataModule.data_dirname",
+            "src.data.ratings_module.RatingsDataModule.data_dirname",
             MagicMock(return_value=Path(tmpdir) / "data"),
         ),
-        patch("src.data.utils.ZIP_SAVE_PATH", MOCK_ZIP_PATH),
     ):
         os.mkdir(tmpdir / "data")
         yield RatingsDataModule()

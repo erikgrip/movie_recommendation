@@ -10,7 +10,7 @@ import torch
 
 from src.lit_models.recommender import LitRecommender
 from src.models.embedding_model import RecommendationModel
-from tests.mocking import fixture_data_module
+from tests.mocking import fixture_ratings_data_module
 
 
 @pytest.fixture(name="model")

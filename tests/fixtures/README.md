@@ -1,6 +1,6 @@
 # Test Datasets
 
-This directory contains a zip file for testing the MovieLensDataModule and the training loop.  
+This directory contains a zip file for testing the RatingsDataModule and the training loop.  
 The zip file contains two CSV files: `ml-latest/ratings_sample_100.csv` and `ml-latest/movies_sample_100.csv`.
 
 ## Datasets

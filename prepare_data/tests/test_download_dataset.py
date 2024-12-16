@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from prepare_data.download_dataset import download_zip, extract_files, EXTRACTED_FILES
+from prepare_data.download_dataset import EXTRACTED_FILES, download_zip, extract_files
 
 
 @pytest.fixture(scope="function", name="zip_save_path")
@@ -48,8 +48,6 @@ def test_download_zip(tmp_path, monkeypatch):
 
     assert tmp_save_path.exists()
     assert tmp_save_path.read_text() == "Mock zip file"
-
-
 
 
 def test_extract_files(tmp_path, zip_save_path):
