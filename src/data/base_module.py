@@ -29,7 +29,8 @@ class BaseDataModule(pl.LightningDataModule):
         self.val_frac = args.get("val_frac", VAL_FRAC)
         self.test_frac = args.get("test_frac", TEST_FRAC)
         self.on_gpu = (
-            args["accelerator"] in ["auto", "gpu", "cuda"] and torch.cuda.is_available()
+            args.get("accelerator") in ["auto", "gpu", "cuda"]
+            and torch.cuda.is_available()
         )
 
         self._validate_data_fractions()

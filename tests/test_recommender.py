@@ -14,10 +14,10 @@ from tests.mocking import fixture_ratings_data_module
 
 
 @pytest.fixture(name="model")
-def fixture_model(data_module):
+def fixture_model(ratings_data_module):
     """Create an example LitRecommender model."""
-    data_module.prepare_data()
-    data_module.setup()
+    ratings_data_module.prepare_data()
+    ratings_data_module.setup()
 
     args = {
         "embedding_size": 4,
@@ -25,8 +25,8 @@ def fixture_model(data_module):
         "dropout_rate": 0.0,
     }
     return RecommendationModel(
-        num_users=data_module.num_user_labels(),
-        num_movies=data_module.num_movie_labels(),
+        num_users=ratings_data_module.num_user_labels(),
+        num_movies=ratings_data_module.num_movie_labels(),
         args=args,
     )
 
