@@ -1,3 +1,7 @@
+"""Feature engineering functions for the movie lens dataset."""
+
+from typing import Tuple
+
 import pandas as pd
 
 GENRES = [
@@ -34,7 +38,7 @@ def extract_movie_release_year(titles: pd.Series) -> pd.Series:
     For example, for the title "Toy Story (1995)", this function will return 1995.0.
     The output will have null values for movies where the year could not be extracted.
     """
-    return pd.Series(titles.str.extract(r"\((\d{4})\)").astype("float"))
+    return titles.str.extract(r"\((\d{4})\)").astype("float")[0]
 
 
 def clean_movie_titles(titles: pd.Series) -> pd.Series:
@@ -71,53 +75,6 @@ def genre_dummies(movies: pd.DataFrame) -> pd.DataFrame:
         .rename(columns=lambda x: x.lower().replace("-", "_"))
     )
     return pd.concat([movies["movie_id"], dummies], axis=1)
-
-
-def user_genre_fractions(
-    ratings: pd.DataFrame, movie_genre_dummies: pd.DataFrame
-) -> pd.DataFrame:
-    """Calculates the fraction of each genre a user has watched at each point in time.
-
-    Example:
-    Input ratings:
-    user_id  movie_id  rating   datetime
-    1        1         5        2021-01-01 10:00:00
-    1        2         4        2021-01-20 13:00:00
-    1        3         3        2021-02-05 15:00:00
-    1        4         2        2021-02-10 09:00:00
-    2        3         4        2021-01-05 10:00:00
-    2        1         4        2021-03-02 10:00:00
-
-    Input movie_genres:
-    movie_id  action comedy ...
-    1         1      0
-    2         0      1
-    3         1      0
-    4         0      0
-
-
-    Returns:
-    user_id  datetime             frac_action   frac_comedy ...
-    1        2021-01-01 10:00:00  0.0           0.0
-    1        2021-01-20 13:00:00  1.0           0.0
-    1        2021-02-05 15:00:00  0.5           0.5
-    1        2021-02-10 09:00:00  0.67          0.33
-    2        2021-01-05 10:00:00  0.0           0.0
-    2        2021-03-02 10:00:00  0.0           1.0
-    """
-    df = ratings.merge(movie_genre_dummies, on="movie_id")
-
-    # Add genre even if it wasn't watched
-    for genre in GENRES:
-        if genre not in df.columns:
-            df[genre] = 0
-
-    g = df.groupby("user_id")
-    frac = (
-        g[GENRES].cumsum().shift(1).fillna(0).div(range(0, len(df)), axis=0).fillna(0)
-    )
-    frac.columns = pd.Index([f"frac_{col}" for col in frac.columns])
-    return pd.concat([df[["user_id", "datetime"]], frac], axis=1)
 
 
 def user_genre_avg_ratings(
@@ -174,3 +131,19 @@ def user_genre_avg_ratings(
     )
     avg.columns = pd.Index([f"avg_rating_{col}" for col in avg.columns])
     return pd.concat([df[["user_id", "datetime"]], avg], axis=1)
+
+
+def calculate_features(
+    ratings: pd.DataFrame, movies: pd.DataFrame
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """Calculates user features from the ratings and movies dataframes."""
+    ratings["datetime"] = pd.to_datetime(ratings["timestamp"], unit="s")
+
+    movies["genres"] = movie_genres_to_list(movies["genres"])
+    movies["year"] = extract_movie_release_year(movies["title"])
+    movies = impute_missing_year(movies, ratings)
+    movies["title"] = clean_movie_titles(movies["title"])
+
+    movie_genre_dummies_df = genre_dummies(movies)
+    users = user_genre_avg_ratings(ratings, movie_genre_dummies_df)
+    return movies, users

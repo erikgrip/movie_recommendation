@@ -79,10 +79,12 @@ def test_prepare_data_already_exctracted():
     """Test the prepare_data method when the data is already extracted."""
     data_module = RatingsDataModule()
     with (
-        patch("src.data.ratings_module.Path.exists") as mock_exists,
+        patch(
+            "src.data.ratings_module.RatingsDataModule.rating_data_path"
+        ) as mock_data,
         patch("src.data.ratings_module.download_and_extract_data") as mock_get_data,
     ):
-        mock_exists.return_value = True
+        mock_data.exists.return_value = True
         data_module.prepare_data()
         mock_get_data.assert_not_called()
 

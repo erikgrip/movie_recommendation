@@ -1,7 +1,6 @@
 """ PyTorch Lightning data module for the MovieLens ratings data. """
 
 import warnings
-from pathlib import Path
 from typing import Dict, Optional
 
 import pandas as pd
@@ -26,17 +25,6 @@ class RatingsDataModule(BaseDataModule):
         self.test_dataset: RatingsDataset
         self.user_label_encoder: LabelEncoder = LabelEncoder()
         self.movie_label_encoder: LabelEncoder = LabelEncoder()
-
-    @property
-    def rating_data_path(self) -> Path:
-        """Return the path to the ratings data."""
-        return self.data_dir() / "extracted" / "ratings.csv"
-
-    @property
-    def movie_data_path(self) -> Path:
-        """Return the path to the movies data."""
-        # Needed only for the predict method
-        return self.data_dir() / "extracted" / "movies.csv"
 
     def num_user_labels(self) -> int:
         """Return the number of unique users in the dataset."""
