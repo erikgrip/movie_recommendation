@@ -4,13 +4,16 @@
 
 import typing
 from argparse import ArgumentParser
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
 import torch
-from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
+from pytorch_lightning.utilities.types import (
+    OptimizerConfig,
+    OptimizerLRSchedulerConfig,
+)
 from torchmetrics import MeanSquaredError, Metric
 from torchmetrics.retrieval import RetrievalPrecision, RetrievalRecall
 
@@ -210,7 +213,9 @@ class LitRecommender(
             "Top 5 recommendations:\n%s", top_5_rec[["title", "genres", "pred"]]
         )
 
-    def configure_optimizers(self) -> OptimizerLRSchedulerConfig:
+    def configure_optimizers(
+        self,
+    ) -> Union[OptimizerLRSchedulerConfig, OptimizerConfig]:
         """Initialize optimizer and learning rate scheduler."""
         optimizer = self.optimizer_class(self.parameters(), lr=self.lr)  # type: ignore
         if self.one_cycle_max_lr is None:
