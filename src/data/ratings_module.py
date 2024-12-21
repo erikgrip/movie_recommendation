@@ -65,7 +65,7 @@ class RatingsDataModule(BaseDataModule):
                 "Please run `python src/data/download_dataset.py`."
             )
 
-    def setup(self, stage: str = "") -> None:
+    def setup(self, stage: Optional[str] = None):
         """Split the data into train and test sets and other setup steps to be done once per GPU."""
         dtypes = {"userId": "int32", "movieId": "int32", "rating": "float32"}
         df = (

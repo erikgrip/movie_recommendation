@@ -34,7 +34,7 @@ def extract_movie_release_year(titles: pd.Series) -> pd.Series:
     For example, for the title "Toy Story (1995)", this function will return 1995.0.
     The output will have null values for movies where the year could not be extracted.
     """
-    return titles.str.extract(r"\((\d{4})\)").astype("float")
+    return pd.Series(titles.str.extract(r"\((\d{4})\)").astype("float"))
 
 
 def clean_movie_titles(titles: pd.Series) -> pd.Series:
@@ -116,7 +116,7 @@ def user_genre_fractions(
     frac = (
         g[GENRES].cumsum().shift(1).fillna(0).div(range(0, len(df)), axis=0).fillna(0)
     )
-    frac.columns = [f"frac_{col}" for col in frac.columns]
+    frac.columns = pd.Index([f"frac_{col}" for col in frac.columns])
     return pd.concat([df[["user_id", "datetime"]], frac], axis=1)
 
 
@@ -172,5 +172,5 @@ def user_genre_avg_ratings(
         .shift(1)
         .fillna(3)
     )
-    avg.columns = [f"avg_rating_{col}" for col in avg.columns]
+    avg.columns = pd.Index([f"avg_rating_{col}" for col in avg.columns])
     return pd.concat([df[["user_id", "datetime"]], avg], axis=1)

@@ -11,7 +11,8 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
-from torchmetrics import MeanSquaredError, Metric, RetrievalPrecision, RetrievalRecall
+from torchmetrics import MeanSquaredError, Metric
+from torchmetrics.retrieval import RetrievalPrecision, RetrievalRecall
 
 from src.utils.log import logger
 

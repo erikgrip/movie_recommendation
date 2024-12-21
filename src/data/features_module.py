@@ -98,7 +98,7 @@ class FeaturesDataModule(BaseDataModule):
         movie_ft.to_parquet(self.movie_features_path, index=False)
         user_ft.to_parquet(self.user_features_path, index=False)
 
-    def setup(self, stage: str = ""):
+    def setup(self, stage: Optional[str] = None):
         """Split the data into train and test sets and other setup steps to be done once per GPU."""
         # TODO: Implement
         raise NotImplementedError("Setup is not implemented for FeaturesDataModule.")

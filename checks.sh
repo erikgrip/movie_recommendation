@@ -27,5 +27,3 @@ echo "------------"
 echo "Testing"
 echo "------------"
 poetry run pytest tests/ -m "not slow"
-
-echo "------------"
