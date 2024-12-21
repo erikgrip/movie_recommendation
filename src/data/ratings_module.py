@@ -7,6 +7,7 @@ from typing import Dict, Optional
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder  # type: ignore
 
+from prepare_data.download_dataset import download_and_extract_data
 from src.data.base_module import BaseDataModule
 from src.data.ratings_dataset import RatingsDataset
 from src.utils.log import logger
@@ -27,15 +28,15 @@ class RatingsDataModule(BaseDataModule):
         self.movie_label_encoder: LabelEncoder = LabelEncoder()
 
     @property
-    def rating_data_path(self) -> str:
+    def rating_data_path(self) -> Path:
         """Return the path to the ratings data."""
-        return str(self.data_dir() / "extracted/ratings.csv")
+        return self.data_dir() / "extracted" / "ratings.csv"
 
     @property
-    def movie_data_path(self) -> str:
+    def movie_data_path(self) -> Path:
         """Return the path to the movies data."""
         # Needed only for the predict method
-        return str(self.data_dir() / "extracted/movies.csv")
+        return self.data_dir() / "extracted" / "movies.csv"
 
     def num_user_labels(self) -> int:
         """Return the number of unique users in the dataset."""
@@ -59,11 +60,10 @@ class RatingsDataModule(BaseDataModule):
 
     def prepare_data(self) -> None:
         """Download data and other preparation steps to be done only once."""
-        if not Path(self.rating_data_path).exists():
-            raise FileNotFoundError(
-                f"File {self.rating_data_path} not found. "
-                "Please run `python src/data/download_dataset.py`."
-            )
+        if self.rating_data_path.exists():
+            logger.info("Ratings data already exists.")
+        else:
+            download_and_extract_data()
 
     def setup(self, stage: Optional[str] = None):
         """Split the data into train and test sets and other setup steps to be done once per GPU."""

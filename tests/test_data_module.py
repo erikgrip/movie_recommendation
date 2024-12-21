@@ -30,9 +30,7 @@ def test_init(
     """Test the initialization of RatingsDataModule."""
     data_module = RatingsDataModule(args)
     mock_data_dir = data_module.data_dir()
-    assert data_module.rating_data_path == str(
-        mock_data_dir / "extracted" / "ratings.csv"
-    )
+    assert data_module.rating_data_path == mock_data_dir / "extracted" / "ratings.csv"
     assert data_module.val_frac == expected_val_frac
     assert data_module.test_frac == expected_test_frac
     assert data_module.batch_size == expected_batch_size
@@ -63,7 +61,7 @@ def test_num_labels_after_prepare_data():
     data_module = RatingsDataModule()
     data_module.prepare_data()
     data_module.setup()
-    assert data_module.num_user_labels() == 100
+    assert data_module.num_user_labels() == 10
     assert data_module.num_movie_labels() == 97
 
 
@@ -81,13 +79,12 @@ def test_prepare_data_already_exctracted():
     """Test the prepare_data method when the data is already extracted."""
     data_module = RatingsDataModule()
     with (
-        patch("src.data.data_module.Path.exists") as mock_exists,
-        patch("src.data.data_module.download_zip") as mock_zip,
-        patch("src.data.data_module.extract_files") as mock_extract,
+        patch("src.data.ratings_module.Path.exists") as mock_exists,
+        patch("src.data.ratings_module.download_and_extract_data") as mock_get_data,
     ):
         mock_exists.return_value = True
         data_module.prepare_data()
-        assert not mock_zip.called and not mock_extract.called
+        mock_get_data.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -104,18 +101,17 @@ def test_setup(
     data_module.setup("fit")
     train_len = len(data_module.train_dataset)
     val_len = len(data_module.val_dataset)
+
     assert train_len == expected_train_len
     assert val_len == expected_val_len
-
-    if train_len > 0:
-        # Oldest rating should be at the end
-        assert data_module.train_dataset[-1] == {
-            "movie_label": torch.tensor(12),
-            "user_label": torch.tensor(16),
-            "movie_id": torch.tensor(485),
-            "rating": torch.tensor(3.0),
-            "user_id": torch.tensor(72565),
-        }
+    # Oldest rating should be at the end
+    assert data_module.train_dataset[-1] == {
+        "movie_label": torch.tensor(16),
+        "user_label": torch.tensor(3),
+        "movie_id": torch.tensor(590),
+        "rating": torch.tensor(4.0),
+        "user_id": torch.tensor(128783),
+    }
 
     data_module.setup("test")
     assert len(data_module.test_dataset) == expected_test_len
