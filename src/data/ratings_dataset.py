@@ -3,9 +3,9 @@
 import torch
 
 
-class MovieLensDataset(torch.utils.data.Dataset):
+class RatingsDataset(torch.utils.data.Dataset):
     """
-    The Movie Lens Dataset class.
+    A dataset with just the rating user and movie IDs and labels.
     """
 
     keys: set = {"user_label", "movie_label", "user_id", "movie_id", "rating"}
@@ -23,6 +23,7 @@ class MovieLensDataset(torch.utils.data.Dataset):
                 "rating": List[float],
             }
         """
+        super().__init__()
         self.data = data
         self._validate_data()
         self._length = len(self.data["user_label"])

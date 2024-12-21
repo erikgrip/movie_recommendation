@@ -4,14 +4,18 @@
 
 import typing
 from argparse import ArgumentParser
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
 import torch
-from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
-from torchmetrics import MeanSquaredError, Metric, RetrievalPrecision, RetrievalRecall
+from pytorch_lightning.utilities.types import (
+    OptimizerConfig,
+    OptimizerLRSchedulerConfig,
+)
+from torchmetrics import MeanSquaredError, Metric
+from torchmetrics.retrieval import RetrievalPrecision, RetrievalRecall
 
 from src.utils.log import logger
 
@@ -152,8 +156,7 @@ class LitRecommender(
 
         # Concat results from all batches
         user_labels = concat_results("user_label")
-        movie_labels = concat_results("movie_label")
-        movie_ids = concat_results("movie_id")
+        user_ids = concat_results("user_id")
 
         # We want to predict ratings for all movies for a single user
         all_movie_labels = torch.tensor(
@@ -163,15 +166,13 @@ class LitRecommender(
         )
 
         # Randomly sample a user to show recommendations for
-        random_user_id = np.random.choice(user_labels.cpu().numpy())
+        random_user_label = np.random.choice(user_labels.cpu().numpy())
+        random_user_id = user_ids[user_labels == random_user_label][0].cpu().numpy()
         user = (
-            torch.tensor(random_user_id, dtype=torch.long)
+            torch.tensor(random_user_label, dtype=torch.long)
             .to(user_labels.device)
             .repeat(all_movie_labels.size(0))
         )
-
-        seen_movie_labels = movie_labels[user_labels == random_user_id].cpu().numpy()
-        seen_movie_ids = movie_ids[user_labels == random_user_id].cpu().numpy()
 
         preds = self(user, all_movie_labels).view(-1)
         preds_df = pd.DataFrame(
@@ -184,21 +185,37 @@ class LitRecommender(
                     )
                 ),
                 "pred": preds.cpu().numpy(),
-                "seen": np.isin(all_movie_labels.cpu().numpy(), seen_movie_labels),
             }
         )
 
-        movie_meta = pd.read_csv(self.trainer.datamodule.movie_path)  # type: ignore
-        user_history = movie_meta[movie_meta["movieId"].isin(seen_movie_ids)]
-        logger.info("User history:\n%s", user_history)
-        top_5 = (
-            movie_meta.merge(preds_df, left_on="movieId", right_on="movie_id")
+        # Show history and top 5 recommendations for a random user
+        ratings = pd.read_csv(self.trainer.datamodule.rating_data_path)  # type: ignore
+        ratings = ratings[ratings["userId"] == random_user_id]
+        movie_meta = pd.read_csv(self.trainer.datamodule.movie_data_path)  # type: ignore
+
+        user_history = ratings.merge(movie_meta, on="movieId")[
+            ["title", "genres", "rating"]
+        ].sort_values("rating", ascending=False)
+        logger.info("User top 5 movies:\n%s", user_history.head(5))
+        logger.info("User bottom 5 movies:\n%s", user_history.tail(5))
+        top_5_rec = (
+            movie_meta.merge(
+                preds_df[
+                    ~preds_df["movie_id"].isin(ratings["movieId"])
+                ],  # unseen movies
+                left_on="movieId",
+                right_on="movie_id",
+            )
             .sort_values(by="pred", ascending=False)
             .head(5)
         )
-        logger.info("Top 5 recommendations:\n%s", top_5)
+        logger.info(
+            "Top 5 recommendations:\n%s", top_5_rec[["title", "genres", "pred"]]
+        )
 
-    def configure_optimizers(self) -> OptimizerLRSchedulerConfig:
+    def configure_optimizers(
+        self,
+    ) -> Union[OptimizerLRSchedulerConfig, OptimizerConfig]:
         """Initialize optimizer and learning rate scheduler."""
         optimizer = self.optimizer_class(self.parameters(), lr=self.lr)  # type: ignore
         if self.one_cycle_max_lr is None:

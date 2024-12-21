@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import torch
 
-from src.data.dataset import MovieLensDataset
+from src.data.ratings_dataset import RatingsDataset
 
 
 @pytest.fixture(name="mock_data_file")
@@ -34,7 +34,7 @@ def fixture_mock_data():
 
 def test_movie_lens_dataset(mock_data):
     """Test the MovieLensDataset class."""
-    dataset = MovieLensDataset(mock_data)
+    dataset = RatingsDataset(mock_data)
     assert len(dataset) == 3
     assert dataset[0] == {
         "user_label": torch.tensor(0, dtype=torch.long),
@@ -49,28 +49,28 @@ def test_movie_lens_dataset_keys(mock_data):
     """Test the MovieLensDataset class with invalid keys."""
     mock_data["extra_key"] = [1, 2, 3]
     with pytest.raises(ValueError):
-        MovieLensDataset(mock_data)
+        RatingsDataset(mock_data)
 
     mock_data.pop("extra_key")
     mock_data.pop("user_label")
     with pytest.raises(ValueError):
-        MovieLensDataset(mock_data)
+        RatingsDataset(mock_data)
 
 
 def test_movie_lens_dataset_uneven_data_length(mock_data):
     """Test the MovieLensDataset class with invalid data."""
     mock_data["user_id"].append(4)
     with pytest.raises(ValueError):
-        MovieLensDataset(mock_data)
+        RatingsDataset(mock_data)
 
 
 def test_movie_lens_dataset_invalid_data_type(mock_data):
     """Test the MovieLensDataset class with invalid data types."""
     mock_data["user_id"][0] = "1"  # String instead of int
     with pytest.raises(ValueError):
-        MovieLensDataset(mock_data)
+        RatingsDataset(mock_data)
 
     mock_data["user_id"][0] = 1
     mock_data["rating"][0] = 5  # Int instead of float
     with pytest.raises(ValueError):
-        MovieLensDataset(mock_data)
+        RatingsDataset(mock_data)

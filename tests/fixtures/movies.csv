@@ -1,0 +1,98 @@
+movieId,title,genres
+60,"Indian in the Cupboard, The (1995)",Adventure|Children|Fantasy
+110,Braveheart (1995),Action|Drama|War
+113,Before and After (1996),Drama|Mystery
+151,Rob Roy (1995),Action|Drama|Romance|War
+208,Waterworld (1995),Action|Adventure|Sci-Fi
+230,Dolores Claiborne (1995),Drama|Thriller
+247,Heavenly Creatures (1994),Crime|Drama
+262,"Little Princess, A (1995)",Children|Drama
+296,Pulp Fiction (1994),Comedy|Crime|Drama|Thriller
+318,"Shawshank Redemption, The (1994)",Crime|Drama
+319,Shallow Grave (1994),Comedy|Drama|Thriller
+344,Ace Ventura: Pet Detective (1994),Comedy
+353,"Crow, The (1994)",Action|Crime|Fantasy|Thriller
+364,"Lion King, The (1994)",Adventure|Animation|Children|Drama|Musical|IMAX
+531,"Secret Garden, The (1993)",Children|Drama
+551,"Nightmare Before Christmas, The (1993)",Animation|Children|Fantasy|Musical
+590,Dances with Wolves (1990),Adventure|Drama|Western
+594,Snow White and the Seven Dwarfs (1937),Animation|Children|Drama|Fantasy|Musical
+608,Fargo (1996),Comedy|Crime|Drama|Thriller
+663,Kids in the Hall: Brain Candy (1996),Comedy
+736,Twister (1996),Action|Adventure|Romance|Thriller
+750,Dr. Strangelove or: How I Learned to Stop Worrying and Love the Bomb (1964),Comedy|War
+765,Jack (1996),Comedy|Drama
+830,"First Wives Club, The (1996)",Comedy
+852,Tin Cup (1996),Comedy|Drama|Romance
+882,"Trigger Effect, The (1996)",Drama|Thriller
+924,2001: A Space Odyssey (1968),Adventure|Drama|Sci-Fi
+931,Spellbound (1945),Mystery|Romance|Thriller
+1073,Willy Wonka & the Chocolate Factory (1971),Children|Comedy|Fantasy|Musical
+1077,Sleeper (1973),Comedy|Sci-Fi
+1079,"Fish Called Wanda, A (1988)",Comedy|Crime
+1092,Basic Instinct (1992),Crime|Mystery|Thriller
+1129,Escape from New York (1981),Action|Adventure|Sci-Fi|Thriller
+1196,Star Wars: Episode V - The Empire Strikes Back (1980),Action|Adventure|Sci-Fi
+1208,Apocalypse Now (1979),Action|Drama|War
+1214,Alien (1979),Horror|Sci-Fi
+1221,"Godfather: Part II, The (1974)",Crime|Drama
+1223,"Grand Day Out with Wallace and Gromit, A (1989)",Adventure|Animation|Children|Comedy|Sci-Fi
+1230,Annie Hall (1977),Comedy|Romance
+1252,Chinatown (1974),Crime|Film-Noir|Mystery|Thriller
+1267,"Manchurian Candidate, The (1962)",Crime|Thriller|War
+1513,Romy and Michele's High School Reunion (1997),Comedy
+1610,"Hunt for Red October, The (1990)",Action|Adventure|Thriller
+1674,Witness (1985),Drama|Romance|Thriller
+1682,"Truman Show, The (1998)",Comedy|Drama|Sci-Fi
+1721,Titanic (1997),Drama|Romance
+1732,"Big Lebowski, The (1998)",Comedy|Crime
+1947,West Side Story (1961),Drama|Musical|Romance
+1994,Poltergeist (1982),Horror|Thriller
+2024,"Rapture, The (1991)",Drama|Mystery
+2159,Henry: Portrait of a Serial Killer (1986),Crime|Horror|Thriller
+2300,"Producers, The (1968)",Comedy
+2391,"Simple Plan, A (1998)",Crime|Drama|Thriller
+2433,"Civil Action, A (1998)",Drama
+2450,Howard the Duck (1986),Adventure|Comedy|Sci-Fi
+2600,eXistenZ (1999),Action|Sci-Fi|Thriller
+2633,"Mummy, The (1932)",Horror|Romance
+2640,Superman (1978),Action|Adventure|Sci-Fi
+2762,"Sixth Sense, The (1999)",Drama|Horror|Mystery
+2844,"Minus Man, The (1999)",Drama|Mystery
+2858,American Beauty (1999),Drama|Romance
+2859,Stop Making Sense (1984),Documentary|Musical
+2871,Deliverance (1972),Adventure|Drama|Thriller
+2967,"Bad Seed, The (1956)",Drama|Thriller
+2997,Being John Malkovich (1999),Comedy|Drama|Fantasy
+3000,Princess Mononoke (Mononoke-hime) (1997),Action|Adventure|Animation|Drama|Fantasy
+3174,Man on the Moon (1999),Comedy|Drama
+3251,Agnes of God (1985),Drama|Mystery
+3386,JFK (1991),Drama|Mystery|Thriller
+3429,Creature Comforts (1989),Animation|Comedy
+3462,Modern Times (1936),Comedy|Drama|Romance
+3671,Blazing Saddles (1974),Comedy|Western
+3917,Hellraiser (1987),Horror
+4148,Hannibal (2001),Horror|Thriller
+4226,Memento (2000),Mystery|Thriller
+4370,A.I. Artificial Intelligence (2001),Adventure|Drama|Sci-Fi
+4499,Dirty Rotten Scoundrels (1988),Comedy
+4661,Sea of Love (1989),Crime|Drama|Thriller
+4720,"Others, The (2001)",Drama|Horror|Mystery|Thriller
+4878,Donnie Darko (2001),Drama|Mystery|Sci-Fi|Thriller
+4929,"Toy, The (1982)",Comedy
+5903,Equilibrium (2002),Action|Sci-Fi|Thriller
+7438,Kill Bill: Vol. 2 (2004),Action|Drama|Thriller
+45880,Marie Antoinette (2006),Drama|Romance
+46578,Little Miss Sunshine (2006),Adventure|Comedy|Drama
+46723,Babel (2006),Drama|Thriller
+47629,The Queen (2006),Drama
+48774,Children of Men (2006),Action|Adventure|Drama|Sci-Fi|Thriller
+49272,Casino Royale (2006),Action|Adventure|Thriller
+58559,"Dark Knight, The (2008)",Action|Crime|Drama|IMAX
+59315,Iron Man (2008),Action|Adventure|Sci-Fi
+60069,WALL·E (2008),Adventure|Animation|Children|Romance|Sci-Fi
+93510,21 Jump Street (2012),Action|Comedy|Crime
+102125,Iron Man 3 (2013),Action|Sci-Fi|Thriller|IMAX
+111759,Edge of Tomorrow (2014),Action|Sci-Fi|IMAX
+115569,Nightcrawler (2014),Crime|Drama|Thriller
+210861,The Gentlemen (2020),Action|Crime

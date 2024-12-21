@@ -12,7 +12,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from src import lit_models
 from src.utils.log import logger
 
-DEFAULT_DATA_CLASS = "MovieLensDataModule"
+DEFAULT_DATA_CLASS = "RatingsDataModule"
 DEFAULT_MODEL_CLASS = "RecommendationModel"
 DEFAULT_EARLY_STOPPING = 10
 
@@ -82,7 +82,7 @@ def main():
         --devices=0 \
         --num_workers=20
         --model_class=RecommendationModel \
-        --data_class=MovieLensDataModule
+        --data_class=RatingsDataModule
     ```
     """
     parser = _setup_parser()
@@ -141,8 +141,7 @@ def main():
     trainer.fit(lit_model, datamodule=data)
     if not args.overfit_batches:
         trainer.test(lit_model, datamodule=data)
-        pred = trainer.predict(lit_model, datamodule=data)
-        logger.info("Predictions: %s", pred)
+        trainer.predict(lit_model, datamodule=data)
 
     best_model_path = model_checkpoint_callback.best_model_path
     if best_model_path:
