@@ -48,6 +48,16 @@ class BaseDataModule(pl.LightningDataModule):
         if not 0 < self.val_frac + self.test_frac < 1.0:
             raise ValueError("Validation and test fractions must sum to less than 1.0.")
 
+    @property
+    def rating_data_path(self) -> Path:
+        """Return the path to the ratings data."""
+        return self.data_dir() / "extracted" / "ratings.csv"
+
+    @property
+    def movie_data_path(self) -> Path:
+        """Return the path to the movies data."""
+        return self.data_dir() / "extracted" / "movies.csv"
+
     @classmethod
     def data_dir(cls) -> Path:
         """Return Path relative to where this script is stored."""

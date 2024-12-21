@@ -1,5 +1,4 @@
 import os
-import sys
 from pathlib import Path
 from urllib.request import urlretrieve
 from zipfile import ZipFile
@@ -12,7 +11,7 @@ EXTRACT_DIR = Path("data/extracted")
 PROCESSED_DIR = Path("data/processed")
 
 ZIP_SAVE_PATH = ZIP_SAVE_DIR / "ml-latest.zip"
-# path in zip: path to save
+# path in zip: path to save extracted file to
 EXTRACTED_FILES = {
     "ml-latest/ratings.csv": EXTRACT_DIR / "ratings.csv",
     "ml-latest/movies.csv": EXTRACT_DIR / "movies.csv",
@@ -37,14 +36,8 @@ def extract_files() -> None:
 
 def download_and_extract_data() -> None:
     """Download the MovieLens data and extract the selected files."""
-    # TODO: Move features to separate module
-    if all(Path(ft_file).exists() for ft_file in FEATURE_FILES):
-        logger.info("Features data already exists.")
-        sys.exit(0)
-    # TODO: Checked before calling this function
-    elif all(Path(ft_file).exists() for ft_file in EXTRACTED_FILES.values()):
+    if all(Path(ft_file).exists() for ft_file in EXTRACTED_FILES.values()):
         logger.info("Extracted files already exist.")
-        # TODO: Extract features
     else:
         if not Path(ZIP_SAVE_PATH).exists():
             os.makedirs(ZIP_SAVE_DIR, exist_ok=True)
@@ -52,7 +45,6 @@ def download_and_extract_data() -> None:
             download_zip(DOWNLOAD_URL, str(ZIP_SAVE_PATH))
         logger.info("Extracting files ...")
         extract_files()
-        # TODO: Extract features
 
     logger.info("Data extraction and preparation complete.")
-    logger.info("Features data saved to %s.", FEATURE_FILES)
+    logger.info("Features data saved to %s.", [str(f) for f in FEATURE_FILES])

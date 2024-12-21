@@ -9,7 +9,8 @@ import pandas as pd
 
 from src.data.base_module import BaseDataModule
 from src.data.features_dataset import FeaturesDataset
-from src.utils import features
+from src.prepare_data.download_dataset import download_and_extract_data
+from src.prepare_data.features import calculate_features
 from src.utils.log import logger
 
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -33,44 +34,28 @@ class FeaturesDataModule(BaseDataModule):
         #     "bert-base-multilingual-cased"
         # )
 
-    def _movie_features(
-        self, movies: pd.DataFrame, ratings: pd.DataFrame
-    ) -> pd.DataFrame:
-        """Create movie features."""
-        logger.info("Creating movie features ...")
-        movies["genres"] = features.movie_genres_to_list(movies["genres"])
-        movies["year"] = features.extract_movie_release_year(movies["title"])
-        movies = features.impute_missing_year(movies, ratings)
-        movies["title"] = features.clean_movie_titles(movies["title"])
-        return movies
-
-    def _user_features(
-        self, movies: pd.DataFrame, ratings: pd.DataFrame
-    ) -> pd.DataFrame:
-        """Create user features."""
-        logger.info("Creating user features ...")
-        genre_dummies = features.genre_dummies(movies)
-        return features.user_genre_avg_ratings(ratings, genre_dummies)
-
     def prepare_data(self) -> None:
         """Download data and other preparation steps to be done only once."""
-        features_dir = self.data_dir() / "features_data_module"
-        os.makedirs(features_dir, exist_ok=True)
+        output_dir = self.data_dir() / "featurized"
+        movie_features_path = output_dir / "movie_features.parquet"
+        user_features_path = output_dir / "user_features.parquet"
+        os.makedirs(output_dir, exist_ok=True)
 
-        if (features_dir / "movie_features.parquet").exists() and (
-            features_dir / "user_features.parquet"
-        ).exists():
+        if movie_features_path.exists() and user_features_path.exists():
             logger.info("Features data already exists. Skipping preparation.")
             return
+        if self.rating_data_path.exists() and self.movie_data_path.exists():
+            logger.info("Ratings and movie data data already exists.")
+        else:
+            download_and_extract_data()
 
         # Load data
         col_rename = {"movieId": "movie_id", "userId": "user_id"}
-        movies = pd.read_csv(self.data_dir() / "extracted/movies.csv").rename(
-            columns=col_rename
-        )
-        ratings = pd.read_csv(self.data_dir() / "extracted/ratings.csv").rename(
-            columns=col_rename
-        )
+        movies = pd.read_csv(self.movie_data_path).rename(columns=col_rename)
+        ratings = pd.read_csv(self.rating_data_path).rename(columns=col_rename)
+
+        # Only keep movies that have been rated
+        movies = movies[movies["movie_id"].isin(ratings["movie_id"])].copy()
 
         # ---------------------
         # TODO: Drop sampling down
@@ -80,18 +65,10 @@ class FeaturesDataModule(BaseDataModule):
         movies = movies[movies["movie_id"].isin(ratings["movie_id"])]
         # ---------------------
 
-        ratings["datetime"] = pd.to_datetime(ratings["timestamp"], unit="s")
-
-        # Only keep movies that have been rated
-        movies = movies[movies["movie_id"].isin(ratings["movie_id"])].copy()
-
-        movie_ft = self._movie_features(movies, ratings)
-        user_ft = self._user_features(movies, ratings)
+        movie_ft, user_ft = calculate_features(ratings, movies)
         del movies, ratings
 
         logger.info("Saving features data ...")
-        output_dir = self.data_dir() / "features_data_module"
-        output_dir.mkdir(exist_ok=True)
 
         self.movie_features_path = output_dir / "movie_features.parquet"
         self.user_features_path = output_dir / "user_features.parquet"
