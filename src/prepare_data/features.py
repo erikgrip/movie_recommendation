@@ -149,11 +149,12 @@ def calculate_features(
     ratings: pd.DataFrame, movies: pd.DataFrame
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Calculates user features from the ratings and movies dataframes."""
+    movie_genre_dummies_df = genre_dummies(movies)
+
     movies["genres"] = movie_genres_to_list(movies["genres"])
     movies["year"] = extract_movie_release_year(movies["title"])
     movies = impute_missing_year(movies, ratings)
     movies["title"] = clean_movie_titles(movies["title"])
 
-    movie_genre_dummies_df = genre_dummies(movies)
     users = user_genre_avg_ratings(ratings, movie_genre_dummies_df)
     return movies, users
