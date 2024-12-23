@@ -29,7 +29,9 @@ GENRES = [
 
 def movie_genres_to_list(genres: pd.Series) -> pd.Series:
     """Converts the genres column to a list of genres."""
-    return genres.replace("(no genres listed)", "").str.split("|")
+    return genres.str.split("|").apply(
+        lambda x: x if x != ["(no genres listed)"] else []
+    )
 
 
 def extract_movie_release_year(titles: pd.Series) -> pd.Series:
@@ -52,9 +54,9 @@ def impute_missing_year(movies: pd.DataFrame, ratings: pd.DataFrame) -> pd.DataF
     Converts the year column to an integer type.
     """
     year_first_rated = (
-        ratings.sort_values("datetime")
+        ratings.sort_values("timestamp")
         .drop_duplicates("movie_id", keep="first")
-        .set_index("movie_id")["datetime"]
+        .set_index("movie_id")["timestamp"]
         .apply(lambda x: x.year)
     )
     mask = movies["year"].isna()
@@ -86,7 +88,7 @@ def user_genre_avg_ratings(
 
     Example:
     Input ratings:
-    user_id  movie_id  rating   datetime
+    user_id  movie_id  rating   timestamp
     1        1         5        2021-01-01 10:00:00
     1        2         4        2021-01-20 13:00:00
     1        3         3        2021-02-05 15:00:00
@@ -102,7 +104,7 @@ def user_genre_avg_ratings(
     4         0      0
 
     Returns:
-    user_id  datetime             avg_rating_action avg_rating_comedy ...
+    user_id  timestamp             avg_rating_action avg_rating_comedy ...
     1        2021-01-01 10:00:00  3.0               3.0
     1        2021-01-20 13:00:00  5.0               3.0
     1        2021-02-05 15:00:00  5.0               4.0
@@ -110,35 +112,43 @@ def user_genre_avg_ratings(
     2        2021-01-05 10:00:00  3.0               3.0
     2        2021-03-02 10:00:00  3.0               4.0
     """
+    initial_rating = 3
+    calc_columns = [f"avg_rating_{col}" for col in GENRES]
+
     df = ratings.merge(movie_genre_dummies, on="movie_id")
 
     # Add genre even if it wasn't watched
     for genre in GENRES:
         if genre not in df.columns:
             df[genre] = 0
+
+    def add_base_columns(cols: list, dataframe: pd.DataFrame) -> pd.DataFrame:
+        """Map aggregated columns to the original dataframe."""
+        return pd.concat([df[cols], dataframe], axis=1)
+
+    # Calculate the average rating for each genre at each point in time
     avg = (
-        (
-            pd.concat(
-                [df[["user_id"]].copy(), df[GENRES].multiply(df["rating"], axis=0)],
-                axis=1,
-            )
-            .groupby("user_id")
-            .cumsum()
-        )
-        .div(df.groupby("user_id")[GENRES].cumsum(), axis=0)
+        add_base_columns(["user_id"], df[GENRES].multiply(df["rating"], axis=0))
+        .groupby("user_id")
+        .cumsum()
+    ).div(df.groupby("user_id")[GENRES].cumsum(), axis=0)
+    avg.columns = pd.Index(calc_columns)
+
+    # Shift the average ratings by one to avoid data leakage
+    result = (
+        add_base_columns(["user_id"], avg)
+        .groupby(["user_id"])[calc_columns]
         .shift(1)
-        .fillna(3)
+        .fillna(initial_rating)
     )
-    avg.columns = pd.Index([f"avg_rating_{col}" for col in avg.columns])
-    return pd.concat([df[["user_id", "datetime"]], avg], axis=1)
+
+    return add_base_columns(["user_id", "timestamp"], result)
 
 
 def calculate_features(
     ratings: pd.DataFrame, movies: pd.DataFrame
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Calculates user features from the ratings and movies dataframes."""
-    ratings["datetime"] = pd.to_datetime(ratings["timestamp"], unit="s")
-
     movies["genres"] = movie_genres_to_list(movies["genres"])
     movies["year"] = extract_movie_release_year(movies["title"])
     movies = impute_missing_year(movies, ratings)
