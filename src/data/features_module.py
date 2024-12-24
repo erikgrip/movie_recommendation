@@ -1,11 +1,13 @@
 """ PyTorch Lightning data module for the MovieLens ratings data. """
 
+from argparse import ArgumentParser
 import os
 import warnings
 from pathlib import Path
 from typing import Dict, Optional
 
 import pandas as pd
+from transformers import AutoTokenizer
 
 from src.data.base_module import BaseDataModule
 from src.data.features_dataset import FeaturesDataset
@@ -16,6 +18,8 @@ from src.utils.log import logger
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 COL_RENAME = {"movieId": "movie_id", "userId": "user_id"}
+
+DEFAULT_TOKENIZER = "bert-base-cased"
 
 
 class FeaturesDataModule(BaseDataModule):
@@ -31,10 +35,9 @@ class FeaturesDataModule(BaseDataModule):
         self.val_dataset: FeaturesDataset
         self.test_dataset: FeaturesDataset
 
-        # multilingual bert tokenizer
-        # self.tokenizer = transformers.BertTokenizer.from_pretrained(
-        #     "bert-base-multilingual-cased"
-        # )
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            args.get("tokenizer_name", DEFAULT_TOKENIZER)
+        )
 
     @property
     def movie_features_path(self) -> Path:
@@ -45,6 +48,17 @@ class FeaturesDataModule(BaseDataModule):
     def user_features_path(self) -> Path:
         """Return the path to the ratings data."""
         return self.data_dir() / "featurized" / "user_features.parquet"
+
+    @staticmethod
+    def add_to_argparse(parser: ArgumentParser) -> ArgumentParser:
+        parser = BaseDataModule.add_to_argparse(parser)
+        parser.add_argument(
+            "--tokenizer_name",
+            type=str,
+            default=DEFAULT_TOKENIZER,
+            help="Name of the pretrained tokenizer to use.",
+        )
+        return parser
 
     def prepare_data(self) -> None:
         """Download data and other preparation steps to be done only once."""
