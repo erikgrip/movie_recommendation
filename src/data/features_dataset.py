@@ -1,6 +1,9 @@
 """ Pytorch dataset for the Movie Lens ratings data. """
 
+import numpy as np
+import pandas as pd
 import torch
+from transformers import AutoTokenizer
 
 
 class FeaturesDataset(torch.utils.data.Dataset):
@@ -8,28 +11,48 @@ class FeaturesDataset(torch.utils.data.Dataset):
     A dataset with the rating user and movie features.
     """
 
-    def __init__(self, data: dict[str, list]):
-        """
-        Initializes the MovieLensDataset.
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    def __init__(
+        self,
+        movie_titles: np.ndarray,
+        movie_genres: np.ndarray,
+        movie_release_years: np.ndarray,
+        user_genre_avgs: np.ndarray,
+        labels: np.ndarray,
+        tokenizer: AutoTokenizer,
+    ):
+        """Initializes the dataset."""
+        super().__init__()
+        self.movie_titles = movie_titles
+        self.movie_genres = movie_genres
+        self.movie_release_years = movie_release_years
+        self.user_genre_avgs = user_genre_avgs
+        self.labels = labels
+        self.tokenizer = tokenizer
 
-        Args:
-            data (dict[str, list]):
-            {
-                "user_id": List[int],
-                "user_genre_fractions": List[List[float]],
-                "user_genre_avg_ratings": List[List[float]],
-                "movie_title": List[str],
-                "movie_year": List[int],
-                "movie_genres": List[List[str]],
-                "rating": List[float],
-            }
-        """
+    @classmethod
+    def from_pandas(
+        cls,
+        user_features: pd.DataFrame,
+        movie_features: pd.DataFrame,
+        labels: pd.Series,
+        tokenizer: AutoTokenizer,
+    ):
+        """Creates a dataset from pandas dataframes."""
+        return cls(
+            movie_titles=movie_features["title"].to_numpy(),
+            movie_genres=movie_features["genres"].to_numpy(),
+            movie_release_years=movie_features["year"].to_numpy(),
+            user_genre_avgs=user_features.to_numpy(),
+            labels=labels.to_numpy(),
+            tokenizer=tokenizer,
+        )
 
     def __len__(self) -> int:
         """
         Returns the number of samples in the dataset.
         """
-        raise NotImplementedError
+        return len(self.labels)
 
     def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
         """

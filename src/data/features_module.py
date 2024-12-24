@@ -1,8 +1,8 @@
 """ PyTorch Lightning data module for the MovieLens ratings data. """
 
-from argparse import ArgumentParser
 import os
 import warnings
+from argparse import ArgumentParser
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -28,8 +28,7 @@ class FeaturesDataModule(BaseDataModule):
     def __init__(self, args: Optional[Dict] = None):
         super().__init__(args)
 
-        self.movie_features_path: Path
-        self.user_features_path: Path
+        args = args or {}
 
         self.train_dataset: FeaturesDataset
         self.val_dataset: FeaturesDataset
@@ -89,38 +88,50 @@ class FeaturesDataModule(BaseDataModule):
         movie_ft.to_parquet(self.movie_features_path, index=False)
         user_ft.to_parquet(self.user_features_path, index=False)
 
-    def setup(self, stage: Optional[str] = None):
+    def setup(self, stage: Optional[str] = None) -> None:
         """Split the data into train, val, and test sets based on timestamps."""
-        # Load data
-        user_features = pd.read_parquet(self.user_features_path)
-        movie_features = pd.read_parquet(self.movie_features_path)
+        user_ft = pd.read_parquet(self.user_features_path)
+        movie_ft = pd.read_parquet(self.movie_features_path)
         ratings = pd.read_csv(self.rating_data_path).rename(columns=COL_RENAME)
         ratings["timestamp"] = pd.to_datetime(ratings["timestamp"], unit="s")
 
         # Merge ratings with user and movie features
         data = pd.merge_asof(
             ratings.sort_values("timestamp"),
-            user_features.sort_values("timestamp"),
+            user_ft.sort_values("timestamp"),
             by="user_id",
             on="timestamp",
             direction="backward",  # Use the latest snapshot before the interaction
-        ).merge(movie_features, on="movie_id")
+        ).merge(movie_ft, on="movie_id")
 
+        # TODO: Write utility function to split data and use it in both data modules
         val_size = int(len(data) * self.val_frac)
         test_size = int(len(data) * self.test_frac)
 
-        # Sort data by timestamp to get time-based split
-        data = data.sort_values("timestamp")
-
+        # Sort by timestamp and split
+        data = data.sort_values("timestamp", ascending=True)
         train_data = data[: -(test_size + val_size)]
         val_data = data[-(test_size + val_size) : -test_size]
         test_data = data[-test_size:]
 
-        logger.info("Train data shape: %s", train_data.shape)
-        logger.info("Validation data shape: %s", val_data.shape)
-        logger.info("Test data shape: %s", test_data.shape)
+        user_ft_cols = data.columns[data.columns.str.startswith("avg_rating_")]
+        movie_ft_cols = ["title", "genres", "year"]
 
-        # Define datasets
-        self.train_dataset = FeaturesDataset(train_data)
-        self.val_dataset = FeaturesDataset(val_data)
-        self.test_dataset = FeaturesDataset(test_data)
+        self.train_dataset = FeaturesDataset.from_pandas(
+            user_features=train_data[user_ft_cols],
+            movie_features=train_data[movie_ft_cols],
+            labels=train_data["rating"],
+            tokenizer=self.tokenizer,
+        )
+        self.val_dataset = FeaturesDataset.from_pandas(
+            user_features=val_data[user_ft_cols],
+            movie_features=val_data[movie_ft_cols],
+            labels=val_data["rating"],
+            tokenizer=self.tokenizer,
+        )
+        self.test_dataset = FeaturesDataset.from_pandas(
+            user_features=test_data[user_ft_cols],
+            movie_features=test_data[movie_ft_cols],
+            labels=test_data["rating"],
+            tokenizer=self.tokenizer,
+        )
