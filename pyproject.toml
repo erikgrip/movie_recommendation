@@ -4,6 +4,10 @@ version = "0.1.0"
 description = "A movie recommendation system trained using PyTorch Lightning"
 authors = ["Erik Grip <erik.grip@outlook.com>"]
 
+[[tool.mypy.overrides]]
+module = ["transformers.*"]
+ignore_missing_imports = true
+
 [tool.poetry.dependencies]
 pandas = { version = "^2.2", extras = ["parquet"] }
 python = "3.11.7"
