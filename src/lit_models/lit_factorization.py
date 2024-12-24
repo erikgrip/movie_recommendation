@@ -24,7 +24,7 @@ OPTIMIZER = "Adam"
 ONE_CYCLE_TOTAL_STEPS = 100
 
 
-class LitRecommender(
+class LitFactorizationModel(
     pl.LightningModule
 ):  # pylint: disable=too-many-instance-attributes
     """PyTorch Lightning module for the movie recommendation model."""

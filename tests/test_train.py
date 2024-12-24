@@ -17,7 +17,7 @@ def fixture_args():
     """Return arguments to overfit batches."""
     return argparse.Namespace(
         data_class="RatingsDataModule",
-        model_class="RecommendationModel",
+        model_class="FactorizationModel",
         overfit_batches=0.0,
         fast_dev_run=0,
         devices="auto",

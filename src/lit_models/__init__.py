@@ -2,4 +2,4 @@
 
 # pylint: disable=unused-import
 
-from src.lit_models.recommender import LitRecommender
+from src.lit_models.lit_factorization import LitFactorizationModel

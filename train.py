@@ -1,4 +1,4 @@
-""" Train a movie recommendation model. """
+""" Train a movie Factorization model. """
 
 import argparse
 import importlib
@@ -13,7 +13,7 @@ from src import lit_models
 from src.utils.log import logger
 
 DEFAULT_DATA_CLASS = "RatingsDataModule"
-DEFAULT_MODEL_CLASS = "RecommendationModel"
+DEFAULT_MODEL_CLASS = "FactorizationModel"
 DEFAULT_EARLY_STOPPING = 10
 
 # Set random seeds
@@ -65,7 +65,7 @@ def _setup_parser():
 
     lit_model_group = parser.add_argument_group("LitModel Args")
     # NOTE: Hardcoded for now, but can be made dynamic
-    lit_models.LitRecommender.add_to_argparse(lit_model_group)
+    lit_models.LitFactorizationModel.add_to_argparse(lit_model_group)
 
     parser.add_argument("--help", "-h", action="help")
     return parser
@@ -81,7 +81,7 @@ def main():
         --max_epochs=10 \
         --devices=0 \
         --num_workers=20
-        --model_class=RecommendationModel \
+        --model_class=FactorizationModel \
         --data_class=RatingsDataModule
     ```
     """
@@ -101,7 +101,7 @@ def main():
         args=vars(args),
     )
     # TODO: Add args=vars(args) to LitRecommender when it's implemented
-    lit_model = lit_models.LitRecommender(model)
+    lit_model = lit_models.LitFactorizationModel(model)
 
     if args.overfit_batches:
         if args.overfit_batches.is_integer():

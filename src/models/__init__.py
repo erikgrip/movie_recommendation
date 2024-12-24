@@ -2,4 +2,4 @@
 
 # pylint: disable=unused-import
 
-from src.models.embedding_model import RecommendationModel
+from src.models.factorization import FactorizationModel
