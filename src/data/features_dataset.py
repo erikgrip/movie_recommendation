@@ -58,4 +58,34 @@ class FeaturesDataset(torch.utils.data.Dataset):
         """
         Returns a sample from the dataset at the given index.
         """
-        raise NotImplementedError
+        title = self.movie_titles[idx]
+        genre_list = self.movie_genres[idx]
+        release_year = self.movie_release_years[idx]
+        user_pref = self.user_genre_avgs[idx]  # Collection of dummy variables
+
+        # Tokenizing the movie title
+        title_tokens = self.tokenizer(
+            title,
+            padding="max_length",
+            truncation=True,
+            max_length=20,
+            return_tensors="pt",
+        )
+
+        # Tokenizing the genres (list of strings), concatenated into one sequence
+        genre_list = " ".join(genre_list)
+        genre_tokens = self.tokenizer(
+            genre_list,
+            padding="max_length",
+            truncation=True,
+            max_length=20,
+            return_tensors="pt",
+        )["input_ids"].squeeze(0)
+
+        return {
+            "title": title_tokens,
+            "genres": genre_tokens,
+            "release_year": torch.tensor(release_year),
+            "user_pref": torch.tensor(user_pref, dtype=torch.float32),
+            "labels": torch.tensor(self.labels[idx], dtype=torch.float32),
+        }
