@@ -12,18 +12,8 @@ from src.prepare_data.features import (
     extract_movie_release_year,
     genre_dummies,
     impute_missing_year,
-    movie_genres_to_list,
     user_genre_avg_ratings,
 )
-
-
-def test_movie_genres_to_list():
-    movies = pd.Series(["Action", "Action|Thriller|Comedy", "(no genres listed)"])
-
-    expected_output = pd.Series([["Action"], ["Action", "Thriller", "Comedy"], []])
-    output = movie_genres_to_list(movies)
-
-    pd.testing.assert_series_equal(output, expected_output)
 
 
 def test_genre_dummies():
@@ -179,11 +169,12 @@ def test_calculate_features():
         {
             "movie_id": [1, 2],
             "title": ["Toy Story", "Jumanji"],
-            "genres": [
-                ["Animation", "Children", "Comedy"],
-                ["Adventure", "Children", "Fantasy"],
-            ],
             "year": [1995, 1995],
+            "is_adventure": [0, 1],
+            "is_animation": [1, 0],
+            "is_children": [1, 1],
+            "is_comedy": [1, 0],
+            "is_fantasy": [0, 1],
         }
     )
 

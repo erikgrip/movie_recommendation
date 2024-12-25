@@ -27,13 +27,6 @@ GENRES = [
 ]
 
 
-def movie_genres_to_list(genres: pd.Series) -> pd.Series:
-    """Converts the genres column to a list of genres."""
-    return genres.str.split("|").apply(
-        lambda x: x if x != ["(no genres listed)"] else []
-    )
-
-
 def extract_movie_release_year(titles: pd.Series) -> pd.Series:
     """Extracts year from the movie title and returns it as a float.
 
@@ -149,12 +142,16 @@ def calculate_features(
     ratings: pd.DataFrame, movies: pd.DataFrame
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Calculates user features from the ratings and movies dataframes."""
-    movie_genre_dummies_df = genre_dummies(movies)
+    movie_genre_dummies = genre_dummies(movies)
 
-    movies["genres"] = movie_genres_to_list(movies["genres"])
     movies["year"] = extract_movie_release_year(movies["title"])
     movies = impute_missing_year(movies, ratings)
     movies["title"] = clean_movie_titles(movies["title"])
 
-    users = user_genre_avg_ratings(ratings, movie_genre_dummies_df)
+    users = user_genre_avg_ratings(ratings, movie_genre_dummies)
+    movies = (
+        movies.merge(movie_genre_dummies, on="movie_id")
+        .drop(columns="genres")
+        .rename(columns={k: "is_" + k for k in GENRES})
+    )
     return movies, users

@@ -114,8 +114,10 @@ class FeaturesDataModule(BaseDataModule):
         val_data = data[-(test_size + val_size) : -test_size]
         test_data = data[-test_size:]
 
-        user_ft_cols = data.columns[data.columns.str.startswith("avg_rating_")]
-        movie_ft_cols = ["title", "genres", "year"]
+        user_ft_cols = data.columns[data.columns.str.startswith("avg_rating_")].tolist()
+        movie_ft_cols = ["title", "year"] + data.columns[
+            data.columns.str.startswith("is_")
+        ].tolist()
 
         self.train_dataset = FeaturesDataset.from_pandas(
             user_features=train_data[user_ft_cols],
