@@ -13,10 +13,11 @@ pandas = { version = "^2.2", extras = ["parquet"] }
 python = "3.11.7"
 pytorch-lightning = "^2.3"
 scikit-learn = "^1.5"
+sentence-transformers = "^3.3"
 tensorboard = "^2.17"
 torch = "^2.3"
 torchmetrics = "^1.4"
-transformers = "^4.45"
+transformers = "^4.45"  # Could be dropped?
 
 [tool.poetry.dev-dependencies]
 black = "*"
