@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from src.prepare_data.features import (
     calculate_features,
@@ -12,6 +13,7 @@ from src.prepare_data.features import (
     extract_movie_release_year,
     genre_dummies,
     impute_missing_year,
+    text_embedding,
     user_genre_avg_ratings,
 )
 
@@ -83,6 +85,30 @@ def test_clean_movie_titles():
     output = clean_movie_titles(titles)
 
     pd.testing.assert_series_equal(output, expected_output)
+
+
+@pytest.mark.parametrize(
+    "dim,expected_output",
+    [
+        (1, [[0.1], [0.4], [0.7]]),
+        (2, [[0.1, 0.2], [0.4, 0.5], [0.7, 0.8]]),
+        (3, [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]]),
+        (4, [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]]),
+    ],
+)
+def test_text_embedding(dim, expected_output):
+    titles = pd.Series(["title1", "title2", "title3"])
+
+    with patch("src.prepare_data.features.SentenceTransformer") as mock_st:
+        mock_st.return_value.encode.return_value = [
+            np.array([0.1, 0.2, 0.3]),
+            np.array([0.4, 0.5, 0.6]),
+            np.array([0.7, 0.8, 0.9]),
+        ]
+
+        output = text_embedding(titles, dim=dim)
+
+    np.testing.assert_array_equal(output, expected_output)
 
 
 def test_user_genre_avg_ratings():
@@ -168,8 +194,8 @@ def test_calculate_features():
     expected_movie_output = pd.DataFrame(
         {
             "movie_id": [1, 2],
-            "title": ["Toy Story", "Jumanji"],
             "year": [1995, 1995],
+            "title_embedding": [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]],
             "is_adventure": [0, 1],
             "is_animation": [1, 0],
             "is_children": [1, 1],
@@ -197,10 +223,14 @@ def test_calculate_features():
         }
     )
 
-    with patch(
-        "src.prepare_data.features.GENRES",
-        ["adventure", "animation", "children", "comedy", "fantasy"],
+    mock_genres = ["adventure", "animation", "children", "comedy", "fantasy"]
+    with (
+        patch("src.prepare_data.features.GENRES", mock_genres),
+        patch("src.prepare_data.features.SentenceTransformer") as mock_st,
     ):
+        mock_st.return_value.encode.return_value = np.array(
+            [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
+        )
         movie_output, user_output = calculate_features(ratings, movies)
 
     pd.testing.assert_frame_equal(movie_output, expected_movie_output)
