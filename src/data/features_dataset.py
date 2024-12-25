@@ -60,34 +60,17 @@ class FeaturesDataset(torch.utils.data.Dataset):
         """
         Returns a sample from the dataset at the given index.
         """
-        title = self.movie_titles[idx]
-        genre_list = self.movie_genres[idx]
-        release_year = self.movie_release_years[idx]
+        mov_title = self.movie_titles[idx]
+        mov_genres = self.movie_genres[idx]  # Collection of dummy variables
+        mov_release_year = self.movie_release_years[idx]
         user_pref = self.user_genre_avgs[idx]  # Collection of dummy variables
 
-        # Tokenizing the movie title
-        title_tokens = self.tokenizer(
-            title,
-            padding="max_length",
-            truncation=True,
-            max_length=20,
-            return_tensors="pt",
-        )
-
-        # Tokenizing the genres (list of strings), concatenated into one sequence
-        genre_list = " ".join(genre_list)
-        genre_tokens = self.tokenizer(
-            genre_list,
-            padding="max_length",
-            truncation=True,
-            max_length=20,
-            return_tensors="pt",
-        )["input_ids"].squeeze(0)
+        # TODO: create embeddings for the movie title
 
         return {
-            "title": title_tokens,
-            "genres": genre_tokens,
-            "release_year": torch.tensor(release_year),
+            "title": mov_title,  # TODO: replace with movie title embeddings
+            "genres": torch.tensor(mov_genres, dtype=torch.int32),
+            "release_year": torch.tensor(mov_release_year, dtype=torch.int32),
             "user_pref": torch.tensor(user_pref, dtype=torch.float32),
             "labels": torch.tensor(self.labels[idx], dtype=torch.float32),
         }
