@@ -3,6 +3,7 @@
 from typing import Tuple
 
 import pandas as pd
+from sentence_transformers import SentenceTransformer
 
 GENRES = [
     "action",
@@ -26,6 +27,11 @@ GENRES = [
     "western",
 ]
 
+# SentenceTransformer model name to use for text embeddings.
+# NOTE: If updated - make sure to use a Matryoshka model, i.e. a model
+# that produces embeddings that can be truncated to a smaller dimension.
+EMBEDDING_MODEL_NAME = "mixedbread-ai/mxbai-embed-xsmall-v1"
+
 
 def extract_movie_release_year(titles: pd.Series) -> pd.Series:
     """Extracts year from the movie title and returns it as a float.
@@ -39,6 +45,13 @@ def extract_movie_release_year(titles: pd.Series) -> pd.Series:
 def clean_movie_titles(titles: pd.Series) -> pd.Series:
     """Cleans the movie titles by removing the year and trailing whitespace."""
     return titles.str.replace(r"\((\d{4})\)", "", regex=True).str.strip()
+
+
+def text_embedding(text: pd.Series, dim: int = 50) -> pd.DataFrame:
+    """Calculates the sentence embeddings for the given text using the SentenceTransformer model."""
+    model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+    embeddings = [emb[:dim] for emb in model.encode(text, show_progress_bar=True)]
+    return pd.Series(embeddings)
 
 
 def impute_missing_year(movies: pd.DataFrame, ratings: pd.DataFrame) -> pd.DataFrame:
@@ -144,14 +157,16 @@ def calculate_features(
     """Calculates user features from the ratings and movies dataframes."""
     movie_genre_dummies = genre_dummies(movies)
 
+    users = user_genre_avg_ratings(ratings, movie_genre_dummies)
+
     movies["year"] = extract_movie_release_year(movies["title"])
     movies = impute_missing_year(movies, ratings)
     movies["title"] = clean_movie_titles(movies["title"])
+    movies["title_embedding"] = text_embedding(movies["title"])
 
-    users = user_genre_avg_ratings(ratings, movie_genre_dummies)
     movies = (
-        movies.merge(movie_genre_dummies, on="movie_id")
-        .drop(columns="genres")
+        movies.drop(columns=["title", "genres"])
+        .merge(movie_genre_dummies, on="movie_id")
         .rename(columns={k: "is_" + k for k in GENRES})
     )
     return movies, users

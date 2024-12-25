@@ -40,10 +40,10 @@ class FeaturesDataset(torch.utils.data.Dataset):
     ):
         """Creates a dataset from pandas dataframes."""
         return cls(
-            movie_titles=movie_features["title"].to_numpy(),
+            movie_titles=movie_features["title_embedding"].to_numpy(),
             movie_release_years=movie_features["year"].to_numpy(),
             movie_genres=movie_features[
-                movie_features.columns.str.startswith("is_")
+                [m for m in movie_features.columns if m.startswith("is_")]
             ].to_numpy(),
             user_genre_avgs=user_features.to_numpy(),
             labels=labels.to_numpy(),

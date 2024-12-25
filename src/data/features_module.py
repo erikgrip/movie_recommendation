@@ -115,7 +115,7 @@ class FeaturesDataModule(BaseDataModule):
         test_data = data[-test_size:]
 
         user_ft_cols = data.columns[data.columns.str.startswith("avg_rating_")].tolist()
-        movie_ft_cols = ["title", "year"] + data.columns[
+        movie_ft_cols = ["title_embedding", "year"] + data.columns[
             data.columns.str.startswith("is_")
         ].tolist()
 
