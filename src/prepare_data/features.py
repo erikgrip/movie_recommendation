@@ -47,11 +47,10 @@ def clean_movie_titles(titles: pd.Series) -> pd.Series:
     return titles.str.replace(r"\((\d{4})\)", "", regex=True).str.strip()
 
 
-def text_embedding(text: pd.Series, dim: int = 50) -> pd.DataFrame:
+def text_embedding(text: pd.Series, dim: int = 50) -> list:
     """Calculates the sentence embeddings for the given text using the SentenceTransformer model."""
     model = SentenceTransformer(EMBEDDING_MODEL_NAME)
-    embeddings = [emb[:dim] for emb in model.encode(text, show_progress_bar=True)]
-    return pd.Series(embeddings)
+    return [emb[:dim] for emb in model.encode(text.to_list(), show_progress_bar=True)]
 
 
 def impute_missing_year(movies: pd.DataFrame, ratings: pd.DataFrame) -> pd.DataFrame:
