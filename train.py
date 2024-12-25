@@ -9,10 +9,10 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 
-from src import lit_models
 from src.utils.log import logger
 
 DEFAULT_DATA_CLASS = "RatingsDataModule"
+DEFAULT_LIT_MODEL_CLASS = "LitFactorizationModel"
 DEFAULT_MODEL_CLASS = "FactorizationModel"
 DEFAULT_EARLY_STOPPING = 10
 
@@ -48,24 +48,23 @@ def _setup_parser():
 
     # Basic arguments
     parser.add_argument("--data_class", type=str, default=DEFAULT_DATA_CLASS)
+    parser.add_argument("--lit_model_class", type=str, default=DEFAULT_LIT_MODEL_CLASS)
     parser.add_argument("--model_class", type=str, default=DEFAULT_MODEL_CLASS)
     parser.add_argument("--early_stopping", type=int, default=DEFAULT_EARLY_STOPPING)
 
     # Get the data and model classes, so that we can add their specific arguments
     temp_args, _ = parser.parse_known_args()
     data_class = _import_class(f"src.data.{temp_args.data_class}")
+    lit_model_class = _import_class(f"src.lit_models.{temp_args.lit_model_class}")
     model_class = _import_class(f"src.models.{temp_args.model_class}")
 
     # Get data, model, and LitModel specific arguments
     data_group = parser.add_argument_group("Data Args")
     data_class.add_to_argparse(data_group)
-
+    lit_model_group = parser.add_argument_group("LitModel Args")
+    lit_model_class.add_to_argparse(lit_model_group)
     model_group = parser.add_argument_group("Model Args")
     model_class.add_to_argparse(model_group)
-
-    lit_model_group = parser.add_argument_group("LitModel Args")
-    # NOTE: Hardcoded for now, but can be made dynamic
-    lit_models.LitFactorizationModel.add_to_argparse(lit_model_group)
 
     parser.add_argument("--help", "-h", action="help")
     return parser
@@ -88,20 +87,25 @@ def main():
     parser = _setup_parser()
     args = parser.parse_args()
     data_class = _import_class(f"src.data.{args.data_class}")
+    lit_model_class = _import_class(f"src.lit_models.{args.lit_model_class}")
     model_class = _import_class(f"src.models.{args.model_class}")
 
     data = data_class(args=vars(args))
-    # Prepare data so that we can get the config for the model
-    data.prepare_data()
-    data.setup()
 
-    model = model_class(
-        num_users=data.num_user_labels(),
-        num_movies=data.num_movie_labels(),
-        args=vars(args),
-    )
-    # TODO: Add args=vars(args) to LitRecommender when it's implemented
-    lit_model = lit_models.LitFactorizationModel(model)
+    if args.model_class == "FactorizationModel":
+        # FactorizationModel needs the number of users and movies
+        # only available after the data is prepared
+        data.prepare_data()
+        data.setup()
+        args.num_users = data.num_user_labels()
+        args.num_movies = data.num_movie_labels()
+        model = model_class(
+            data.num_user_labels(), data.num_movie_labels(), args=vars(args)
+        )
+    else:
+        model = model_class(args=vars(args))
+
+    lit_model = lit_model_class(model, args=vars(args))
 
     if args.overfit_batches:
         if args.overfit_batches.is_integer():
