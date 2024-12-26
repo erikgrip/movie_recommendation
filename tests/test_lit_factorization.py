@@ -33,21 +33,22 @@ def fixture_batch():
 
 def test_lit_recommender_forward(lit_model):
     """Test the forward method of LitFactorizationModel."""
-    output = lit_model(users=batch["user_label"], movies=batch["movie_label"])
+    input_ = {"users": torch.tensor([0]), "movies": torch.tensor([1])}
+    output = lit_model(input_)
     assert isinstance(output, torch.Tensor)
     assert output.shape == (1, 1)
 
 
 def test_lit_recommender_training_step(lit_model, batch):
     """Test the training_step method of LitFactorizationModel."""
-    loss = lit_model.training_step(train_batch=batch)
+    loss = lit_model.training_step(batch=batch, batch_idx=0)
     assert isinstance(loss, torch.Tensor)
     assert loss.item() >= 0.0
 
 
 def test_lit_recommender_test_step(lit_model, batch):
     """Test the test_step method of LitFactorizationModel."""
-    output = lit_model.test_step(test_batch=batch)
+    output = lit_model.test_step(batch=batch, batch_idx=0)
     assert isinstance(output, dict)
     assert output.keys() == {"loss", "rmse", "precision", "recall"}
     assert output["loss"].item() >= 0.0

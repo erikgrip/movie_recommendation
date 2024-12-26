@@ -23,29 +23,32 @@ class LitFactorizationModel(BaseLitModel):  # pylint: disable=too-many-ancestors
             top_k=5, empty_target_action="skip", adaptive_k=True
         )
         self.recall: Metric = RetrievalRecall(top_k=5, empty_target_action="skip")
-        self.predict_step_outputs: list[Dict[str, torch.Tensor]] = []
 
-    def forward(self, users: torch.Tensor, movies: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: Dict[str, torch.Tensor]) -> torch.Tensor:
         """Forward pass of the model."""
-        return self.model(users, movies)
+        return self.model(**x)
 
     def training_step(
-        self, train_batch: Dict[str, torch.Tensor], batch_idx: Optional[int] = None
+        self, batch: Dict[str, torch.Tensor], batch_idx: int
     ) -> torch.Tensor:
         """Training step."""
-        y_pred = self(train_batch["user_label"], train_batch["movie_label"]).view(-1)
-        y_true = train_batch["rating"]
+        y_pred = self(
+            {"users": batch["user_label"], "movies": batch["movie_label"]}
+        ).view(-1)
+        y_true = batch["rating"]
 
         loss = self.mse(y_pred, y_true)
         self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
         return loss
 
     def validation_step(
-        self, val_batch: Dict[str, torch.Tensor], batch_idx: Optional[int] = None
+        self, batch: Dict[str, torch.Tensor], batch_idx: int
     ) -> torch.Tensor:
         """Validation step."""
-        y_pred = self(val_batch["user_label"], val_batch["movie_label"]).view(-1)
-        y_true = val_batch["rating"]
+        y_pred = self(
+            {"users": batch["user_label"], "movies": batch["movie_label"]}
+        ).view(-1)
+        y_true = batch["rating"]
 
         # Calculate loss
         loss = self.mse(y_pred, y_true)
@@ -53,11 +56,13 @@ class LitFactorizationModel(BaseLitModel):  # pylint: disable=too-many-ancestors
         return loss
 
     def test_step(
-        self, test_batch: Dict[str, torch.Tensor], batch_idx: Optional[int] = None
+        self, batch: Dict[str, torch.Tensor], batch_idx: int
     ) -> Dict[str, torch.Tensor]:
         """Test step."""
-        y_pred = self(test_batch["user_label"], test_batch["movie_label"]).view(-1)
-        y_true = test_batch["rating"]
+        y_pred = self(
+            {"users": batch["user_label"], "movies": batch["movie_label"]}
+        ).view(-1)
+        y_true = batch["rating"]
 
         # Calculate loss
         loss = self.mse(y_pred, y_true)

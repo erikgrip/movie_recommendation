@@ -1,8 +1,10 @@
 """ PyTorch model for Two-Tower recommendation with user and movie features."""
 
+from argparse import ArgumentParser
+
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 
 class UserTower(nn.Module):
@@ -16,7 +18,7 @@ class UserTower(nn.Module):
             nn.Linear(128, embedding_dim),
         )
 
-    def forward(self, user_features: torch.Tensor):
+    def forward(self, user_features: torch.Tensor) -> torch.Tensor:
         """
         Forward pass for the user tower.
         Args:
@@ -59,12 +61,28 @@ class MovieTower(nn.Module):
 class TwoTower(nn.Module):
     """Two-tower recommendation model combining user and movie features."""
 
-    def __init__(self, user_feature_dim: int, movie_feature_dim: int, embedding_dim: int):
+    def __init__(
+        self,
+        user_feature_dim: int,
+        movie_feature_dim: int,
+        embedding_dim: int,
+        **kwargs
+    ):
         super().__init__()
         self.user_tower = UserTower(user_feature_dim, embedding_dim)
         self.movie_tower = MovieTower(movie_feature_dim, embedding_dim)
 
-    def forward(self, user_features: torch.Tensor, title_embeddings: torch.Tensor, movie_features: torch.Tensor):
+    @staticmethod
+    def add_to_argparse(parser: ArgumentParser) -> ArgumentParser:
+        """Add model-specific arguments to the parser."""
+        return parser
+
+    def forward(
+        self,
+        user_features: torch.Tensor,
+        title_embeddings: torch.Tensor,
+        movie_features: torch.Tensor,
+    ):
         """
         Forward pass for the Two-Tower model.
         Args:
@@ -79,7 +97,12 @@ class TwoTower(nn.Module):
         movie_embedding = self.movie_tower(title_embeddings, movie_features)
         return user_embedding, movie_embedding
 
-    def predict(self, user_features: torch.Tensor, title_embeddings: torch.Tensor, movie_features: torch.Tensor):
+    def predict(
+        self,
+        user_features: torch.Tensor,
+        title_embeddings: torch.Tensor,
+        movie_features: torch.Tensor,
+    ):
         """
         Compute the similarity score between user and movie embeddings.
         Args:
@@ -89,5 +112,9 @@ class TwoTower(nn.Module):
         Returns:
             Tensor of shape (batch_size,) representing similarity scores.
         """
-        user_embedding, movie_embedding = self.forward(user_features, title_embeddings, movie_features)
-        return torch.sum(user_embedding * movie_embedding, dim=1)  # Dot product similarity
+        user_embedding, movie_embedding = self.forward(
+            user_features, title_embeddings, movie_features
+        )
+        return torch.sum(
+            user_embedding * movie_embedding, dim=1
+        )  # Dot product similarity
