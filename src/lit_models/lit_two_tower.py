@@ -8,6 +8,8 @@ from torchmetrics import MeanSquaredError, Metric
 
 from src.lit_models.base_model import BaseLitModel
 
+MAX_RATING = 5.0
+
 
 class TwoTowerLitModel(BaseLitModel):  # pylint: disable=too-many-ancestors
     """PyTorch Lightning module for the Two-Tower model."""
@@ -34,19 +36,17 @@ class TwoTowerLitModel(BaseLitModel):  # pylint: disable=too-many-ancestors
         self, batch: Dict[str, torch.Tensor], batch_idx: int
     ) -> torch.Tensor:
         """Training step."""
-        preds = self(batch)
-        loss = self.mse(preds, batch["labels"])
+        denorm_preds = self(batch) * MAX_RATING
+        loss = self.mse(denorm_preds, batch["labels"])
         self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
         return loss
 
-    # TODO: Move to base class if it stays the same
-    # pylint: disable=duplicate-code
     def validation_step(
         self, batch: Dict[str, torch.Tensor], batch_idx: int
     ) -> torch.Tensor:
         """Validation step."""
-        preds = self(batch)
-        loss = self.mse(preds, batch["labels"])
+        denorm_preds = self(batch) * MAX_RATING
+        loss = self.mse(denorm_preds, batch["labels"])
         self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
         return loss
 
@@ -54,8 +54,8 @@ class TwoTowerLitModel(BaseLitModel):  # pylint: disable=too-many-ancestors
         self, batch: Dict[str, torch.Tensor], batch_idx: int
     ) -> Dict[str, torch.Tensor]:
         """Test step."""
-        preds = self(batch)
-        loss = self.mse(preds, batch["labels"])
+        denorm_preds = self(batch) * MAX_RATING
+        loss = self.mse(denorm_preds, batch["labels"])
         self.log("test_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
         return {"loss": loss}
 
