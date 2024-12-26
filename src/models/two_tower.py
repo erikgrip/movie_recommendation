@@ -1,22 +1,21 @@
 """ PyTorch model for Two-Tower recommendation with user and movie features."""
 
 from argparse import ArgumentParser
+from typing import Dict, Optional
 
 import torch
 import torch.nn.functional as F
 from torch import nn
 
+from src.prepare_data.features import GENRES
+
 
 class UserTower(nn.Module):
     """User tower that processes user features."""
 
-    def __init__(self, user_feature_dim: int, embedding_dim: int):
+    def __init__(self, embedding_dim: int):
         super().__init__()
-        self.user_fc = nn.Sequential(
-            nn.Linear(user_feature_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, embedding_dim),
-        )
+        self.user_fc = nn.Embedding(len(GENRES), embedding_dim)
 
     def forward(self, user_features: torch.Tensor) -> torch.Tensor:
         """
@@ -33,16 +32,22 @@ class UserTower(nn.Module):
 class MovieTower(nn.Module):
     """Movie tower that processes movie features."""
 
-    def __init__(self, movie_feature_dim: int, embedding_dim: int):
+    def __init__(self, embedding_dim: int):
         super().__init__()
-        self.title_embedding_dim = 768  # Assumes BERT produces embeddings of this size
+        # TODO: Add movie ID hash
+        self.features = [
+            "genres",  # dummies
+            "release_year",
+            "title_embedding",  # pre computed
+        ]
+        if embedding_dim % len(self.features) != 0:
+            raise ValueError(
+                f"embedding_dim must be divisible by the number of features: {len(self.features)}"
+            )
+        self.feature_embedding_dim = int(embedding_dim / len(self.features))
 
-        # Fully connected layers for movie features
-        self.movie_fc = nn.Sequential(
-            nn.Linear(movie_feature_dim + self.title_embedding_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, embedding_dim),
-        )
+        self.genres_fc = nn.Embedding(len(GENRES), self.feature_embedding_dim)
+        self.release_year_fc = nn.Embedding(2024 - 1800, self.feature_embedding_dim)
 
     def forward(self, title_embeddings: torch.Tensor, other_features: torch.Tensor):
         """
