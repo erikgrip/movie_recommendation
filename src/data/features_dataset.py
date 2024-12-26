@@ -3,7 +3,6 @@
 import numpy as np
 import pandas as pd
 import torch
-from transformers import AutoTokenizer
 
 
 class FeaturesDataset(torch.utils.data.Dataset):
@@ -19,7 +18,6 @@ class FeaturesDataset(torch.utils.data.Dataset):
         movie_release_years: np.ndarray,
         user_genre_avgs: np.ndarray,
         labels: np.ndarray,
-        tokenizer: AutoTokenizer,
     ):
         """Initializes the dataset."""
         super().__init__()
@@ -28,7 +26,6 @@ class FeaturesDataset(torch.utils.data.Dataset):
         self.movie_release_years = movie_release_years
         self.user_genre_avgs = user_genre_avgs
         self.labels = labels
-        self.tokenizer = tokenizer
 
     @classmethod
     def from_pandas(
@@ -36,10 +33,10 @@ class FeaturesDataset(torch.utils.data.Dataset):
         user_features: pd.DataFrame,
         movie_features: pd.DataFrame,
         labels: pd.Series,
-        tokenizer: AutoTokenizer,
     ):
         """Creates a dataset from pandas dataframes."""
         return cls(
+            # TODO: Fix naming
             movie_titles=movie_features["title_embedding"].to_numpy(),
             movie_release_years=movie_features["year"].to_numpy(),
             movie_genres=movie_features[
@@ -47,7 +44,6 @@ class FeaturesDataset(torch.utils.data.Dataset):
             ].to_numpy(),
             user_genre_avgs=user_features.to_numpy(),
             labels=labels.to_numpy(),
-            tokenizer=tokenizer,
         )
 
     def __len__(self) -> int:

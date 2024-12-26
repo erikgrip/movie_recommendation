@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Dict, Optional
 
 import pandas as pd
-from transformers import AutoTokenizer
 
 from src.data.base_module import BaseDataModule
 from src.data.features_dataset import FeaturesDataset
@@ -19,7 +18,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 COL_RENAME = {"movieId": "movie_id", "userId": "user_id"}
 
-DEFAULT_TOKENIZER = "bert-base-cased"
+PRETRAINED_EMBEDDING_DIM = 80
 
 
 class FeaturesDataModule(BaseDataModule):
@@ -34,8 +33,8 @@ class FeaturesDataModule(BaseDataModule):
         self.val_dataset: FeaturesDataset
         self.test_dataset: FeaturesDataset
 
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            args.get("tokenizer_name", DEFAULT_TOKENIZER)
+        self.pretrained_embedding_dim = args.get(
+            "pretrained_embedding_dim", PRETRAINED_EMBEDDING_DIM
         )
 
     @property
@@ -52,10 +51,10 @@ class FeaturesDataModule(BaseDataModule):
     def add_to_argparse(parser: ArgumentParser) -> ArgumentParser:
         parser = BaseDataModule.add_to_argparse(parser)
         parser.add_argument(
-            "--tokenizer_name",
-            type=str,
-            default=DEFAULT_TOKENIZER,
-            help="Name of the pretrained tokenizer to use.",
+            "--pretrained_embedding_dim",
+            type=int,
+            default=PRETRAINED_EMBEDDING_DIM,
+            help="Dimension to truncate the pretrained embeddings to.",
         )
         return parser
 
@@ -123,17 +122,14 @@ class FeaturesDataModule(BaseDataModule):
             user_features=train_data[user_ft_cols],
             movie_features=train_data[movie_ft_cols],
             labels=train_data["rating"],
-            tokenizer=self.tokenizer,
         )
         self.val_dataset = FeaturesDataset.from_pandas(
             user_features=val_data[user_ft_cols],
             movie_features=val_data[movie_ft_cols],
             labels=val_data["rating"],
-            tokenizer=self.tokenizer,
         )
         self.test_dataset = FeaturesDataset.from_pandas(
             user_features=test_data[user_ft_cols],
             movie_features=test_data[movie_ft_cols],
             labels=test_data["rating"],
-            tokenizer=self.tokenizer,
         )
