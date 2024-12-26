@@ -1,25 +1,21 @@
-# pylint: disable=arguments-differ,unused-argument
+# pylint: disable=unused-argument
 """ Movie recommendation model. """
 
 from typing import Dict, Optional
 
-import numpy as np
-import pandas as pd
 import torch
 from torchmetrics import MeanSquaredError, Metric
 from torchmetrics.retrieval import RetrievalPrecision, RetrievalRecall
 
 from src.lit_models.base_model import BaseLitModel
-from src.utils.log import logger
 
 
-class LitFactorizationModel(BaseLitModel):
+class LitFactorizationModel(BaseLitModel):  # pylint: disable=too-many-ancestors
     """PyTorch Lightning module for the movie recommendation model."""
 
     def __init__(self, model: torch.nn.Module, args: Optional[Dict] = None):
-        super().__init__()
+        super().__init__(model, args)
         args = args or {}
-        self.model = model
 
         self.mse: Metric = MeanSquaredError()
         self.rmse: Metric = MeanSquaredError(squared=False)

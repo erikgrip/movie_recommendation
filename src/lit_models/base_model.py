@@ -1,3 +1,4 @@
+# pylint: disable=arguments-differ
 """ Base class for Pytorch Lightning models. """
 
 from argparse import ArgumentParser
@@ -18,9 +19,10 @@ ONE_CYCLE_TOTAL_STEPS = 100
 class BaseLitModel(pl.LightningModule):
     """Base class for Pytorch Lightning models."""
 
-    def __init__(self, args: Optional[Dict] = None) -> None:
+    def __init__(self, model: torch.nn.Module, args: Optional[Dict] = None) -> None:
         super().__init__()
         args = args or {}
+        self.model = model
 
         optimizer: str = args.get("optimizer", OPTIMIZER)
         self.optimizer_class: Type[torch.optim.Optimizer] = getattr(
@@ -52,20 +54,32 @@ class BaseLitModel(pl.LightningModule):
         )
         return parser
 
-    def forward(self, *args, **kwargs) -> torch.Tensor:
-        """Forward pass. This should be implemented by the child class."""
+    def forward(self, x: Dict[str, torch.Tensor]) -> torch.Tensor:
+        """Forward pass of the model. This should be implemented by the child class."""
         raise NotImplementedError
 
-    def training_step(self, *args, **kwargs) -> torch.Tensor:
+    def training_step(
+        self, batch: Dict[str, torch.Tensor], batch_idx: int
+    ) -> torch.Tensor:
         """Training step. This should be implemented by the child class."""
         raise NotImplementedError
 
-    def validation_step(self, *args, **kwargs) -> torch.Tensor:
+    def validation_step(
+        self, batch: Dict[str, torch.Tensor], batch_idx: int
+    ) -> torch.Tensor:
         """Validation step. This should be implemented by the child class."""
         raise NotImplementedError
 
-    def test_step(self, *args, **kwargs) -> Dict[str, torch.Tensor]:
+    def test_step(
+        self, batch: Dict[str, torch.Tensor], batch_idx: int
+    ) -> Dict[str, torch.Tensor]:
         """Test step. This should be implemented by the child class."""
+        raise NotImplementedError
+
+    def predict_step(
+        self, batch: Dict[str, torch.Tensor], batch_idx: int, dataloader_idx=0
+    ) -> torch.Tensor:
+        """Prediction step. This should be implemented by the child class."""
         raise NotImplementedError
 
     def configure_optimizers(
