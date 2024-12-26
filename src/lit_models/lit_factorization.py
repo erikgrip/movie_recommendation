@@ -77,96 +77,19 @@ class LitFactorizationModel(BaseLitModel):  # pylint: disable=too-many-ancestors
         is_high_rating = y_true > 3.5  # 4s and 5s are considered positive
 
         # Calculate precision
-        precision = self.precision(
-            y_pred, is_high_rating, indexes=test_batch["user_label"]
-        )
+        precision = self.precision(y_pred, is_high_rating, indexes=batch["user_label"])
         self.log(
             "test_precision", precision, on_step=False, on_epoch=True, prog_bar=True
         )
 
         # Calculate recall
-        recall = self.recall(y_pred, is_high_rating, indexes=test_batch["user_label"])
+        recall = self.recall(y_pred, is_high_rating, indexes=batch["user_label"])
         self.log("test_recall", recall, on_step=False, on_epoch=True, prog_bar=True)
 
         return {"loss": loss, "rmse": rmse, "precision": precision, "recall": recall}
 
     def predict_step(
-        self,
-        pred_batch: Dict[str, torch.Tensor],
-        batch_idx: Optional[int] = None,
-        dataloader_idx: int = 0,
-    ) -> None:
+        self, batch: Dict[str, torch.Tensor], batch_idx: int, dataloader_idx: int = 0
+    ) -> torch.Tensor:
         """Prediction step."""
-        self.predict_step_outputs.append(
-            {
-                "user_label": pred_batch["user_label"],
-                "movie_label": pred_batch["movie_label"],
-                "user_id": pred_batch["user_id"],
-                "movie_id": pred_batch["movie_id"],
-            }
-        )
-
-    def on_predict_end(self) -> None:
-        """Prediction step."""
-
-        def concat_results(key: str) -> torch.Tensor:
-            return torch.cat([x[key] for x in self.predict_step_outputs], dim=0)
-
-        # Concat results from all batches
-        user_labels = concat_results("user_label")
-        user_ids = concat_results("user_id")
-
-        # We want to predict ratings for all movies for a single user
-        all_movie_labels = torch.tensor(
-            list(range(self.model.num_movies)),
-            dtype=torch.long,
-            device=user_labels.device,
-        )
-
-        # Randomly sample a user to show recommendations for
-        random_user_label = np.random.choice(user_labels.cpu().numpy())
-        random_user_id = user_ids[user_labels == random_user_label][0].cpu().numpy()
-        user = (
-            torch.tensor(random_user_label, dtype=torch.long)
-            .to(user_labels.device)
-            .repeat(all_movie_labels.size(0))
-        )
-
-        preds = self(user, all_movie_labels).view(-1)
-        preds_df = pd.DataFrame(
-            {
-                "user_label": user.cpu(),
-                "movie_label": all_movie_labels.cpu().numpy(),
-                "movie_id": (
-                    self.trainer.datamodule.movie_label_encoder.inverse_transform(  # type: ignore
-                        all_movie_labels.cpu().numpy()
-                    )
-                ),
-                "pred": preds.cpu().numpy(),
-            }
-        )
-
-        # Show history and top 5 recommendations for a random user
-        ratings = pd.read_csv(self.trainer.datamodule.rating_data_path)  # type: ignore
-        ratings = ratings[ratings["userId"] == random_user_id]
-        movie_meta = pd.read_csv(self.trainer.datamodule.movie_data_path)  # type: ignore
-
-        user_history = ratings.merge(movie_meta, on="movieId")[
-            ["title", "genres", "rating"]
-        ].sort_values("rating", ascending=False)
-        logger.info("User top 5 movies:\n%s", user_history.head(5))
-        logger.info("User bottom 5 movies:\n%s", user_history.tail(5))
-        top_5_rec = (
-            movie_meta.merge(
-                preds_df[
-                    ~preds_df["movie_id"].isin(ratings["movieId"])
-                ],  # unseen movies
-                left_on="movieId",
-                right_on="movie_id",
-            )
-            .sort_values(by="pred", ascending=False)
-            .head(5)
-        )
-        logger.info(
-            "Top 5 recommendations:\n%s", top_5_rec[["title", "genres", "pred"]]
-        )
+        return self(batch["user_label"], batch["movie_label"]).view(-1)
