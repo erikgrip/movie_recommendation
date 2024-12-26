@@ -15,7 +15,10 @@ class UserTower(nn.Module):
 
     def __init__(self, embedding_dim: int):
         super().__init__()
-        self.user_fc = nn.Embedding(len(GENRES), embedding_dim)
+        self.genre_avgs_layer = nn.Sequential(
+            nn.Linear(len(GENRES), embedding_dim),
+            nn.ReLU(),
+        )
 
     def forward(self, user_features: torch.Tensor) -> torch.Tensor:
         """
@@ -25,7 +28,7 @@ class UserTower(nn.Module):
         Returns:
             A tensor of shape (batch_size, embedding_dim) representing user embeddings.
         """
-        user_embedding = self.user_fc(user_features)
+        user_embedding = self.genre_avgs_layer(user_features)
         return F.normalize(user_embedding, p=2, dim=1)  # L2 normalization
 
 
@@ -46,21 +49,34 @@ class MovieTower(nn.Module):
             )
         self.feature_embedding_dim = int(embedding_dim / len(self.features))
 
-        self.genres_fc = nn.Embedding(len(GENRES), self.feature_embedding_dim)
-        self.release_year_fc = nn.Embedding(2024 - 1800, self.feature_embedding_dim)
+        self.genres_layer = nn.Sequential(
+            nn.Linear(len(GENRES), self.feature_embedding_dim),
+            nn.ReLU(),
+        )
+        self.release_year_layer = nn.Sequential(
+            nn.Linear(1, self.feature_embedding_dim),
+            nn.ReLU(),
+        )
 
-    def forward(self, title_embeddings: torch.Tensor, other_features: torch.Tensor):
+    def forward(self, title_embeddings: torch.Tensor,
+                release_year: torch.Tensor, genres: torch.Tensor) -> torch.Tensor:
         """
         Forward pass for the movie tower.
         Args:
             title_embeddings: Tensor of shape (batch_size, title_embedding_dim).
-            other_features: Tensor of shape (batch_size, movie_feature_dim).
+            release_year: Tensor of shape (batch_size, 1).
+            genres: Tensor of shape (batch_size, num_genres).
         Returns:
             A tensor of shape (batch_size, embedding_dim) representing movie embeddings.
         """
-        combined_features = torch.cat([title_embeddings, other_features], dim=1)
-        movie_embedding = self.movie_fc(combined_features)
-        return F.normalize(movie_embedding, p=2, dim=1)  # L2 normalization
+        genre_embedding = self.genres_layer(genres)
+        year_embedding = self.release_year_layer(release_year.unsqueeze(1))
+
+        concat_embedding = torch.cat(
+            [title_embeddings, genre_embedding, year_embedding], dim=1
+        )
+
+        return F.normalize(concat_embedding, p=2, dim=1)
 
 
 class TwoTower(nn.Module):
@@ -86,44 +102,25 @@ class TwoTower(nn.Module):
         )
         return parser
 
-    def forward(
-        self,
-        user_features: torch.Tensor,
-        title_embeddings: torch.Tensor,
-        movie_features: torch.Tensor,
-    ):
+    def forward(self, user_pref: torch.Tensor, title_embedding: torch.Tensor,
+                release_year: torch.Tensor, genres: torch.Tensor) -> torch.Tensor:
         """
-        Forward pass for the Two-Tower model.
-        Args:
-            user_features: Tensor of shape (batch_size, user_feature_dim).
-            title_embeddings: Tensor of shape (batch_size, title_embedding_dim).
-            movie_features: Tensor of shape (batch_size, movie_feature_dim).
-        Returns:
-            user_embedding: Tensor of shape (batch_size, embedding_dim).
-            movie_embedding: Tensor of shape (batch_size, embedding_dim).
-        """
-        user_embedding = self.user_tower(user_features)
-        movie_embedding = self.movie_tower(title_embeddings, movie_features)
-        return user_embedding, movie_embedding
+        Forward pass for the two-tower model.
 
-    def predict(
-        self,
-        user_features: torch.Tensor,
-        title_embeddings: torch.Tensor,
-        movie_features: torch.Tensor,
-    ):
-        """
-        Compute the similarity score between user and movie embeddings.
         Args:
-            user_features: Tensor of shape (batch_size, user_feature_dim).
-            title_embeddings: Tensor of shape (batch_size, title_embedding_dim).
-            movie_features: Tensor of shape (batch_size, movie_feature_dim).
+            user_pref: Tensor of shape (batch_size, user_feature_dim).
+            title_embedding: Tensor of shape (batch_size, title_embedding_dim).
+            release_year: Tensor of shape (batch_size, 1).
+            genres: Tensor of shape (batch_size, num_genres).
+        
         Returns:
-            Tensor of shape (batch_size,) representing similarity scores.
+            A tensor of shape (batch_size,) representing the predicted ratings.
         """
-        user_embedding, movie_embedding = self.forward(
-            user_features, title_embeddings, movie_features
+        user_embedding = self.user_tower(user_pref)
+        movie_embedding = self.movie_tower(
+            title_embedding, release_year, genres
         )
+
         return torch.sum(
             user_embedding * movie_embedding, dim=1
-        )  # Dot product similarity
+        )

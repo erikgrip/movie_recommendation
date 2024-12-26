@@ -63,8 +63,8 @@ class FeaturesDataset(torch.utils.data.Dataset):
 
         return {
             "title_embedding": torch.tensor(mov_title, dtype=torch.float32),
-            "genres": torch.tensor(mov_genres, dtype=torch.int32),
-            "release_year": torch.tensor(mov_release_year, dtype=torch.int32),
+            "genres": torch.tensor(mov_genres, dtype=torch.float32),
+            "release_year": torch.tensor(mov_release_year, dtype=torch.float32),
             "user_pref": torch.tensor(user_pref, dtype=torch.float32),
             "labels": torch.tensor(self.labels[idx], dtype=torch.float32),
         }

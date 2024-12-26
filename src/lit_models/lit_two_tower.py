@@ -26,14 +26,7 @@ class TwoTowerLitModel(BaseLitModel):  # pylint: disable=too-many-ancestors
         # TODO: Concatenate earlier so that we can just pass the input on here
         if x is None:
             raise ValueError("batch argument is required for TwoTowerLitModel.")
-
-        user_features = x["user_pref"]
-        title_embeddings = x["title_embedding"]  # Precomputed embeddings
-        movie_features = torch.cat(
-            [x["genres"], x["release_year"].unsqueeze(-1)], dim=1
-        )
-
-        return self.model.predict(user_features, title_embeddings, movie_features)
+        return self.model(**{k: v for k, v in x.items() if k != "labels"})
 
     def training_step(
         self, batch: Dict[str, torch.Tensor], batch_idx: int
