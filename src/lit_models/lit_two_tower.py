@@ -1,31 +1,28 @@
+""" PyTorch Lightning module for the Two-Tower training loop."""
+
+from argparse import ArgumentParser
+from typing import Dict, Optional
+
 import torch
-import pytorch_lightning as pl
 from torch.nn import functional as F
-from torch.optim import Adam
 
-from src.models.two_tower import TwoTower
+from src.lit_models.base_model import BaseLitModel
 
 
-class TwoTowerLitModel(pl.LightningModule):
+class TwoTowerLitModel(BaseLitModel):
     """PyTorch Lightning module for the Two-Tower model."""
 
-    def __init__(
-        self, 
-        user_feature_dim: int, 
-        movie_feature_dim: int, 
-        embedding_dim: int, 
-        learning_rate: float = 1e-3
-    ):
-        super().__init__()
+    def __init__(self, model: torch.nn.Module, args: Optional[Dict] = None):
+        super().__init__(args)
         self.save_hyperparameters()  # Automatically saves hyperparameters like embedding_dim, etc.
 
         # Instantiate the TwoTower model
-        self.model = TwoTower(
-            user_feature_dim=user_feature_dim, 
-            movie_feature_dim=movie_feature_dim, 
-            embedding_dim=embedding_dim
-        )
-        self.learning_rate = learning_rate
+        self.model = model
+
+    @staticmethod
+    def add_to_argparse(parser: ArgumentParser) -> ArgumentParser:
+        """Add model-specific arguments to the parser."""
+        return parser
 
     def forward(self, batch):
         """
@@ -61,8 +58,3 @@ class TwoTowerLitModel(pl.LightningModule):
         preds = self.forward(batch)
         loss = F.mse_loss(preds, batch["labels"])
         self.log("test_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
-
-    def configure_optimizers(self):
-        """Configure optimizer."""
-        optimizer = Adam(self.parameters(), lr=self.learning_rate)
-        return optimizer

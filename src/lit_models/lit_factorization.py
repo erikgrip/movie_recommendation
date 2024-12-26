@@ -1,48 +1,25 @@
+# pylint: disable=arguments-differ,unused-argument
 """ Movie recommendation model. """
 
-# pylint: disable=arguments-differ,unused-argument
-
-import typing
-from argparse import ArgumentParser
-from typing import Dict, Optional, Union
+from typing import Dict, Optional
 
 import numpy as np
 import pandas as pd
-import pytorch_lightning as pl
 import torch
-from pytorch_lightning.utilities.types import (
-    OptimizerConfig,
-    OptimizerLRSchedulerConfig,
-)
 from torchmetrics import MeanSquaredError, Metric
 from torchmetrics.retrieval import RetrievalPrecision, RetrievalRecall
 
+from src.lit_models.base_model import BaseLitModel
 from src.utils.log import logger
 
-LR = 1e-3
-OPTIMIZER = "Adam"
-ONE_CYCLE_TOTAL_STEPS = 100
 
-
-class LitFactorizationModel(
-    pl.LightningModule
-):  # pylint: disable=too-many-instance-attributes
+class LitFactorizationModel(BaseLitModel):
     """PyTorch Lightning module for the movie recommendation model."""
 
     def __init__(self, model: torch.nn.Module, args: Optional[Dict] = None):
         super().__init__()
         args = args or {}
         self.model = model
-
-        optimizer: str = args.get("optimizer", OPTIMIZER)
-        self.optimizer_class: typing.Type[torch.optim.Optimizer] = getattr(
-            torch.optim, optimizer
-        )
-        self.lr: float = args.get("lr", LR)
-        self.one_cycle_max_lr: Optional[float] = args.get("one_cycle_max_lr")
-        self.one_cycle_total_steps: int = args.get(
-            "one_cycle_total_steps", ONE_CYCLE_TOTAL_STEPS
-        )
 
         self.mse: Metric = MeanSquaredError()
         self.rmse: Metric = MeanSquaredError(squared=False)
@@ -51,26 +28,6 @@ class LitFactorizationModel(
         )
         self.recall: Metric = RetrievalRecall(top_k=5, empty_target_action="skip")
         self.predict_step_outputs: list[Dict[str, torch.Tensor]] = []
-
-    @staticmethod
-    def add_to_argparse(parser: ArgumentParser) -> ArgumentParser:
-        """Add model-specific arguments to the parser."""
-        parser.add_argument(
-            "--optimizer",
-            type=str,
-            default=OPTIMIZER,
-            help=f"Optimizer class from torch.optim (default: {OPTIMIZER})",
-        )
-        parser.add_argument(
-            "--lr", type=float, default=LR, help=f"learning rate (default: {LR})"
-        )
-        parser.add_argument(
-            "--one_cycle_total_steps",
-            type=int,
-            default=ONE_CYCLE_TOTAL_STEPS,
-            help="Total steps for the 1cycle policy",
-        )
-        return parser
 
     def forward(self, users: torch.Tensor, movies: torch.Tensor) -> torch.Tensor:
         """Forward pass of the model."""
@@ -212,17 +169,3 @@ class LitFactorizationModel(
         logger.info(
             "Top 5 recommendations:\n%s", top_5_rec[["title", "genres", "pred"]]
         )
-
-    def configure_optimizers(
-        self,
-    ) -> Union[OptimizerLRSchedulerConfig, OptimizerConfig]:
-        """Initialize optimizer and learning rate scheduler."""
-        optimizer = self.optimizer_class(self.parameters(), lr=self.lr)  # type: ignore
-        if self.one_cycle_max_lr is None:
-            return {"optimizer": optimizer}
-        scheduler = torch.optim.lr_scheduler.OneCycleLR(
-            optimizer=optimizer,
-            max_lr=self.one_cycle_max_lr,
-            total_steps=self.one_cycle_total_steps,
-        )
-        return {"optimizer": optimizer, "lr_scheduler": scheduler}
