@@ -58,8 +58,12 @@ class MovieTower(nn.Module):
             nn.ReLU(),
         )
 
-    def forward(self, title_embeddings: torch.Tensor,
-                release_year: torch.Tensor, genres: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        title_embeddings: torch.Tensor,
+        release_year: torch.Tensor,
+        genres: torch.Tensor,
+    ) -> torch.Tensor:
         """
         Forward pass for the movie tower.
         Args:
@@ -102,8 +106,13 @@ class TwoTower(nn.Module):
         )
         return parser
 
-    def forward(self, user_pref: torch.Tensor, title_embedding: torch.Tensor,
-                release_year: torch.Tensor, genres: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        user_pref: torch.Tensor,
+        title_embedding: torch.Tensor,
+        release_year: torch.Tensor,
+        genres: torch.Tensor,
+    ) -> torch.Tensor:
         """
         Forward pass for the two-tower model.
 
@@ -112,15 +121,11 @@ class TwoTower(nn.Module):
             title_embedding: Tensor of shape (batch_size, title_embedding_dim).
             release_year: Tensor of shape (batch_size, 1).
             genres: Tensor of shape (batch_size, num_genres).
-        
+
         Returns:
             A tensor of shape (batch_size,) representing the predicted ratings.
         """
         user_embedding = self.user_tower(user_pref)
-        movie_embedding = self.movie_tower(
-            title_embedding, release_year, genres
-        )
+        movie_embedding = self.movie_tower(title_embedding, release_year, genres)
 
-        return torch.sum(
-            user_embedding * movie_embedding, dim=1
-        )
+        return torch.sum(user_embedding * movie_embedding, dim=1)
