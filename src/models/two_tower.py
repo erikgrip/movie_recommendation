@@ -61,20 +61,24 @@ class MovieTower(nn.Module):
 class TwoTower(nn.Module):
     """Two-tower recommendation model combining user and movie features."""
 
-    def __init__(
-        self,
-        user_feature_dim: int,
-        movie_feature_dim: int,
-        embedding_dim: int,
-        **kwargs
-    ):
+    def __init__(self, args: Optional[Dict] = None, **kwargs):
         super().__init__()
-        self.user_tower = UserTower(user_feature_dim, embedding_dim)
-        self.movie_tower = MovieTower(movie_feature_dim, embedding_dim)
+
+        self.args = args or {}
+        self.embedding_dim = self.args.get("embedding_dim", 240)
+
+        self.user_tower = UserTower(self.embedding_dim)
+        self.movie_tower = MovieTower(self.embedding_dim)
 
     @staticmethod
     def add_to_argparse(parser: ArgumentParser) -> ArgumentParser:
         """Add model-specific arguments to the parser."""
+        parser.add_argument(
+            "--embedding_dim",
+            type=int,
+            default=240,
+            help="Dimension of the user and movie embeddings.",
+        )
         return parser
 
     def forward(

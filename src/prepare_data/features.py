@@ -1,6 +1,6 @@
 """Feature engineering functions for the movie lens dataset."""
 
-from typing import Tuple
+from typing import Optional, Tuple
 
 import pandas as pd
 from sentence_transformers import SentenceTransformer
@@ -47,9 +47,11 @@ def clean_movie_titles(titles: pd.Series) -> pd.Series:
     return titles.str.replace(r"\((\d{4})\)", "", regex=True).str.strip()
 
 
-def text_embedding(text: pd.Series, dim: int = 50) -> list:
+def text_embedding(text: pd.Series, dim: Optional[int] = None) -> list:
     """Calculates the sentence embeddings for the given text using the SentenceTransformer model."""
     model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+    if dim is None:
+        return model.encode(text.to_list(), show_progress_bar=True)
     return [emb[:dim] for emb in model.encode(text.to_list(), show_progress_bar=True)]
 
 
@@ -151,7 +153,7 @@ def user_genre_avg_ratings(
 
 
 def calculate_features(
-    ratings: pd.DataFrame, movies: pd.DataFrame
+    ratings: pd.DataFrame, movies: pd.DataFrame, embedding_dim: int = 256
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Calculates user features from the ratings and movies dataframes."""
     movie_genre_dummies = genre_dummies(movies)
@@ -161,7 +163,7 @@ def calculate_features(
     movies["year"] = extract_movie_release_year(movies["title"])
     movies = impute_missing_year(movies, ratings)
     movies["title"] = clean_movie_titles(movies["title"])
-    movies["title_embedding"] = text_embedding(movies["title"])
+    movies["title_embedding"] = text_embedding(movies["title"], embedding_dim)
 
     movies = (
         movies.drop(columns=["title", "genres"])

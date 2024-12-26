@@ -92,7 +92,11 @@ class FeaturesDataModule(BaseDataModule):
         user_ft = pd.read_parquet(self.user_features_path)
         movie_ft = pd.read_parquet(self.movie_features_path)
         ratings = pd.read_csv(self.rating_data_path).rename(columns=COL_RENAME)
+
         ratings["timestamp"] = pd.to_datetime(ratings["timestamp"], unit="s")
+        movie_ft["title_embedding"] = movie_ft["title_embedding"].apply(
+            lambda x: x[: self.pretrained_embedding_dim]
+        )
 
         # Merge ratings with user and movie features
         data = pd.merge_asof(
