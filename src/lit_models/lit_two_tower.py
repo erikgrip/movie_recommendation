@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 from typing import Dict, Optional
 
 import torch
-from torch.nn import functional as F
+from torchmetrics import MeanSquaredError, Metric
 
 from src.lit_models.base_model import BaseLitModel
 
@@ -14,7 +14,9 @@ class TwoTowerLitModel(BaseLitModel):  # pylint: disable=too-many-ancestors
 
     def __init__(self, model: torch.nn.Module, args: Optional[Dict] = None):
         super().__init__(model, args)
-        self.save_hyperparameters()  # Automatically saves hyperparameters like embedding_dim, etc.
+        self.save_hyperparameters()
+
+        self.mse: Metric = MeanSquaredError()
 
     @staticmethod
     def add_to_argparse(parser: ArgumentParser) -> ArgumentParser:
@@ -32,8 +34,8 @@ class TwoTowerLitModel(BaseLitModel):  # pylint: disable=too-many-ancestors
         self, batch: Dict[str, torch.Tensor], batch_idx: int
     ) -> torch.Tensor:
         """Training step."""
-        preds = self.forward(batch)
-        loss = F.mse_loss(preds, batch["labels"])
+        preds = self(batch)
+        loss = self.mse(preds, batch["labels"])
         self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
         return loss
 
@@ -43,8 +45,8 @@ class TwoTowerLitModel(BaseLitModel):  # pylint: disable=too-many-ancestors
         self, batch: Dict[str, torch.Tensor], batch_idx: int
     ) -> torch.Tensor:
         """Validation step."""
-        preds = self.forward(batch)
-        loss = F.mse_loss(preds, batch["labels"])
+        preds = self(batch)
+        loss = self.mse(preds, batch["labels"])
         self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
         return loss
 
@@ -52,8 +54,8 @@ class TwoTowerLitModel(BaseLitModel):  # pylint: disable=too-many-ancestors
         self, batch: Dict[str, torch.Tensor], batch_idx: int
     ) -> Dict[str, torch.Tensor]:
         """Test step."""
-        preds = self.forward(batch)
-        loss = F.mse_loss(preds, batch["labels"])
+        preds = self(batch)
+        loss = self.mse(preds, batch["labels"])
         self.log("test_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
         return {"loss": loss}
 
