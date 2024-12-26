@@ -61,10 +61,8 @@ class FeaturesDataset(torch.utils.data.Dataset):
         mov_release_year = self.movie_release_years[idx]
         user_pref = self.user_genre_avgs[idx]  # Collection of dummy variables
 
-        # TODO: create embeddings for the movie title
-
         return {
-            "title": mov_title,  # TODO: replace with movie title embeddings
+            "title_embedding": torch.tensor(mov_title, dtype=torch.float32),
             "genres": torch.tensor(mov_genres, dtype=torch.int32),
             "release_year": torch.tensor(mov_release_year, dtype=torch.int32),
             "user_pref": torch.tensor(user_pref, dtype=torch.float32),
