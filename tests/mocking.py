@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 
 from src.data.ratings_module import RatingsDataModule
+from src.models.factorization import FactorizationModel
 
 MOCK_ZIP_PATH = "tests/fixtures/sample_100.zip"
 
@@ -33,3 +34,21 @@ def fixture_ratings_data_module():
         )
 
         yield RatingsDataModule()
+
+
+@pytest.fixture(name="model")
+def fixture_model(ratings_data_module):
+    """Create an example LitFactorizationModel model."""
+    ratings_data_module.prepare_data()
+    ratings_data_module.setup()
+
+    args = {
+        "embedding_size": 4,
+        "hidden_dim": 4,
+        "dropout_rate": 0.0,
+    }
+    return FactorizationModel(
+        num_users=ratings_data_module.num_user_labels(),
+        num_movies=ratings_data_module.num_movie_labels(),
+        args=args,
+    )

@@ -64,13 +64,6 @@ class RatingsDataModule(BaseDataModule):
             .rename(columns={"userId": "user_id", "movieId": "movie_id"})
         )
 
-        # ---------------------
-        # TODO: Drop sampling down
-        logger.info("Downsampling data ...")
-        sample_users = df["user_id"].unique()[:100]
-        df = df[df["user_id"].isin(sample_users)]
-        # ---------------------
-
         df["user_label"] = self.user_label_encoder.fit_transform(df["user_id"])
         df["movie_label"] = self.movie_label_encoder.fit_transform(df["movie_id"])
 

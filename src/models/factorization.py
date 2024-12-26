@@ -14,17 +14,12 @@ HIDDEN_DIM = 256
 DROPOUT_RATE = 0.2
 
 
-class RecommendationModel(nn.Module):  # pylint: disable=too-many-instance-attributes
+class FactorizationModel(nn.Module):  # pylint: disable=too-many-instance-attributes
     """
-    A PyTorch model for recommendation with user and movie embeddings.
+    PyTorch model for factorization-based recommendation with user and movie embeddings.
     """
 
-    def __init__(
-        self,
-        num_users: int,
-        num_movies: int,
-        args: Optional[Dict] = None,
-    ):  # pylint: disable=too-many-arguments
+    def __init__(self, num_users: int, num_movies: int, args: Optional[Dict] = None):
         super().__init__()
         self.num_users = num_users
         self.num_movies = num_movies

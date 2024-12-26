@@ -2,6 +2,7 @@
 
 import os
 import warnings
+from argparse import ArgumentParser
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -15,6 +16,10 @@ from src.utils.log import logger
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
+COL_RENAME = {"movieId": "movie_id", "userId": "user_id"}
+
+PRETRAINED_EMBEDDING_DIM = 80
+
 
 class FeaturesDataModule(BaseDataModule):
     """Lightning data module for the MovieLens ratings data."""
@@ -22,26 +27,43 @@ class FeaturesDataModule(BaseDataModule):
     def __init__(self, args: Optional[Dict] = None):
         super().__init__(args)
 
-        self.movie_features_path: Path
-        self.user_features_path: Path
+        args = args or {}
 
         self.train_dataset: FeaturesDataset
         self.val_dataset: FeaturesDataset
         self.test_dataset: FeaturesDataset
 
-        # multilingual bert tokenizer
-        # self.tokenizer = transformers.BertTokenizer.from_pretrained(
-        #     "bert-base-multilingual-cased"
-        # )
+        self.pretrained_embedding_dim = args.get(
+            "pretrained_embedding_dim", PRETRAINED_EMBEDDING_DIM
+        )
+
+    @property
+    def movie_features_path(self) -> Path:
+        """Return the path to the ratings data."""
+        return self.data_dir() / "featurized" / "movie_features.parquet"
+
+    @property
+    def user_features_path(self) -> Path:
+        """Return the path to the ratings data."""
+        return self.data_dir() / "featurized" / "user_features.parquet"
+
+    @staticmethod
+    def add_to_argparse(parser: ArgumentParser) -> ArgumentParser:
+        parser = BaseDataModule.add_to_argparse(parser)
+        parser.add_argument(
+            "--pretrained_embedding_dim",
+            type=int,
+            default=PRETRAINED_EMBEDDING_DIM,
+            help="Dimension to truncate the pretrained embeddings to.",
+        )
+        return parser
 
     def prepare_data(self) -> None:
         """Download data and other preparation steps to be done only once."""
         output_dir = self.data_dir() / "featurized"
-        movie_features_path = output_dir / "movie_features.parquet"
-        user_features_path = output_dir / "user_features.parquet"
         os.makedirs(output_dir, exist_ok=True)
 
-        if movie_features_path.exists() and user_features_path.exists():
+        if self.movie_features_path.exists() and self.user_features_path.exists():
             logger.info("Features data already exists. Skipping preparation.")
             return
         if self.rating_data_path.exists() and self.movie_data_path.exists():
@@ -50,32 +72,68 @@ class FeaturesDataModule(BaseDataModule):
             download_and_extract_data()
 
         # Load data
-        col_rename = {"movieId": "movie_id", "userId": "user_id"}
-        movies = pd.read_csv(self.movie_data_path).rename(columns=col_rename)
-        ratings = pd.read_csv(self.rating_data_path).rename(columns=col_rename)
+        movies = pd.read_csv(self.movie_data_path).rename(columns=COL_RENAME)
+        ratings = pd.read_csv(self.rating_data_path).rename(columns=COL_RENAME)
+        ratings["timestamp"] = pd.to_datetime(ratings["timestamp"], unit="s")
 
         # Only keep movies that have been rated
         movies = movies[movies["movie_id"].isin(ratings["movie_id"])].copy()
 
-        # ---------------------
-        # TODO: Drop sampling down
-        logger.info("Sampling data ...")
-        sample_users = ratings["user_id"].unique()[:1_000]
-        ratings = ratings[ratings["user_id"].isin(sample_users)]
-        movies = movies[movies["movie_id"].isin(ratings["movie_id"])]
-        # ---------------------
-
+        logger.info("Calculating features ...")
         movie_ft, user_ft = calculate_features(ratings, movies)
         del movies, ratings
 
-        logger.info("Saving features data ...")
-
-        self.movie_features_path = output_dir / "movie_features.parquet"
-        self.user_features_path = output_dir / "user_features.parquet"
+        logger.info("Saving features data to %s ...", output_dir)
         movie_ft.to_parquet(self.movie_features_path, index=False)
         user_ft.to_parquet(self.user_features_path, index=False)
 
-    def setup(self, stage: Optional[str] = None):
-        """Split the data into train and test sets and other setup steps to be done once per GPU."""
-        # TODO: Implement
-        raise NotImplementedError("Setup is not implemented for FeaturesDataModule.")
+    def setup(self, stage: Optional[str] = None) -> None:
+        """Split the data into train, val, and test sets based on timestamps."""
+        user_ft = pd.read_parquet(self.user_features_path)
+        movie_ft = pd.read_parquet(self.movie_features_path)
+        ratings = pd.read_csv(self.rating_data_path).rename(columns=COL_RENAME)
+
+        ratings["timestamp"] = pd.to_datetime(ratings["timestamp"], unit="s")
+        movie_ft["title_embedding"] = movie_ft["title_embedding"].apply(
+            lambda x: x[: self.pretrained_embedding_dim]
+        )
+
+        # Merge ratings with user and movie features
+        data = pd.merge_asof(
+            ratings.sort_values("timestamp"),
+            user_ft.sort_values("timestamp"),
+            by="user_id",
+            on="timestamp",
+            direction="backward",  # Use the latest snapshot before the interaction
+        ).merge(movie_ft, on="movie_id")
+
+        # TODO: Write utility function to split data and use it in both data modules
+        val_size = int(len(data) * self.val_frac)
+        test_size = int(len(data) * self.test_frac)
+
+        # Sort by timestamp and split
+        data = data.sort_values("timestamp", ascending=True)
+        train_data = data[: -(test_size + val_size)]
+        val_data = data[-(test_size + val_size) : -test_size]
+        test_data = data[-test_size:]
+
+        user_ft_cols = data.columns[data.columns.str.startswith("avg_rating_")].tolist()
+        movie_ft_cols = ["title_embedding", "year"] + data.columns[
+            data.columns.str.startswith("is_")
+        ].tolist()
+
+        self.train_dataset = FeaturesDataset.from_pandas(
+            user_features=train_data[user_ft_cols],
+            movie_features=train_data[movie_ft_cols],
+            labels=train_data["rating"],
+        )
+        self.val_dataset = FeaturesDataset.from_pandas(
+            user_features=val_data[user_ft_cols],
+            movie_features=val_data[movie_ft_cols],
+            labels=val_data["rating"],
+        )
+        self.test_dataset = FeaturesDataset.from_pandas(
+            user_features=test_data[user_ft_cols],
+            movie_features=test_data[movie_ft_cols],
+            labels=test_data["rating"],
+        )
