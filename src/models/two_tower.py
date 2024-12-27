@@ -108,7 +108,7 @@ class TwoTower(nn.Module):
 
     def forward(
         self,
-        user_pref: torch.Tensor,
+        user_genre_avg: torch.Tensor,
         title_embedding: torch.Tensor,
         release_year: torch.Tensor,
         genres: torch.Tensor,
@@ -117,7 +117,7 @@ class TwoTower(nn.Module):
         Forward pass for the two-tower model.
 
         Args:
-            user_pref: Tensor of shape (batch_size, user_feature_dim).
+            user_genre_avg: Tensor of shape (batch_size, num_genres).
             title_embedding: Tensor of shape (batch_size, title_embedding_dim).
             release_year: Tensor of shape (batch_size, 1).
             genres: Tensor of shape (batch_size, num_genres).
@@ -125,7 +125,7 @@ class TwoTower(nn.Module):
         Returns:
             A tensor of shape (batch_size,) representing the predicted ratings.
         """
-        user_embedding = self.user_tower(user_pref)
+        user_embedding = self.user_tower(user_genre_avg)
         movie_embedding = self.movie_tower(title_embedding, release_year, genres)
 
         return torch.sum(user_embedding * movie_embedding, dim=1)
