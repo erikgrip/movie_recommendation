@@ -16,7 +16,6 @@ class TwoTowerLitModel(BaseLitModel):  # pylint: disable=too-many-ancestors
 
     def __init__(self, model: torch.nn.Module, args: Optional[Dict] = None):
         super().__init__(model, args)
-        self.save_hyperparameters()
 
         self.mse: Metric = MeanSquaredError()
 

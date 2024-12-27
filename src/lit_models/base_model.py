@@ -21,6 +21,8 @@ class BaseLitModel(pl.LightningModule):
 
     def __init__(self, model: torch.nn.Module, args: Optional[Dict] = None) -> None:
         super().__init__()
+        self.save_hyperparameters()
+
         args = args or {}
         self.model = model
 
