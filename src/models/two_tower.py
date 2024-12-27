@@ -24,7 +24,7 @@ class UserTower(nn.Module):
         """
         Forward pass for the user tower.
         Args:
-            user_features: Tensor of shape (batch_size, user_feature_dim).
+            user_features: Tensor of shape (batch_size, num_genres).
         Returns:
             A tensor of shape (batch_size, embedding_dim) representing user embeddings.
         """
