@@ -9,7 +9,7 @@ from sklearn.preprocessing import LabelEncoder  # type: ignore
 from src.data.base_module import BaseDataModule
 from src.data.ratings_dataset import RatingsDataset
 from src.prepare_data.download_dataset import download_and_extract_data
-from src.utils.data import time_split_data, COL_RENAME
+from src.utils.data import COL_RENAME, time_split_data
 from src.utils.log import logger
 
 warnings.filterwarnings("ignore", category=FutureWarning)

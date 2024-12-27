@@ -116,7 +116,7 @@ def test_user_genre_avg_ratings():
         {
             "user_id": [1, 1, 1, 1, 2, 2],
             "movie_id": [1, 2, 3, 4, 3, 1],
-            "rating": [5, 4, 3, 2, 4, 4],
+            "label": [5, 4, 3, 2, 4, 4],
             "timestamp": pd.to_datetime(
                 [
                     "2021-01-01 10:00:00",
@@ -171,7 +171,7 @@ def test_calculate_features():
         {
             "user_id": [1, 1, 2, 2],
             "movie_id": [1, 2, 2, 1],
-            "rating": [5, 4, 4, 4],
+            "label": [5, 4, 4, 4],
             "timestamp": pd.to_datetime(
                 [
                     "2021-01-01 10:00:00",

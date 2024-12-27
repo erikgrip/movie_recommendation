@@ -12,7 +12,7 @@ from src.data.base_module import BaseDataModule
 from src.data.features_dataset import FeaturesDataset
 from src.prepare_data.download_dataset import download_and_extract_data
 from src.prepare_data.features import calculate_features
-from src.utils.data import time_split_data, COL_RENAME
+from src.utils.data import COL_RENAME, time_split_data
 from src.utils.log import logger
 
 warnings.filterwarnings("ignore", category=FutureWarning)

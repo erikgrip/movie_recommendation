@@ -10,7 +10,7 @@ class FeaturesDataset(torch.utils.data.Dataset):
     A dataset with the rating user and movie features.
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         movie_title_embeddings: np.ndarray,
         movie_genres: np.ndarray,

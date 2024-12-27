@@ -43,7 +43,6 @@ class TwoTowerLitModel(BaseLitModel):  # pylint: disable=too-many-ancestors
         self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
         return loss
 
-    # pylint: disable=code-duplication
     def validation_step(self, batch: Dict[str, Tensor], batch_idx: int) -> Tensor:
         loss = self._get_loss(batch)
         self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True)

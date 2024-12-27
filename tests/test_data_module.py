@@ -106,8 +106,9 @@ def test_setup(
 
     assert train_len == expected_train_len
     assert val_len == expected_val_len
-    # Oldest rating should be at the end
-    assert data_module.train_dataset[-1] == {
+
+    # Oldest rating - should be in train set
+    assert data_module.train_dataset[0] == {
         "movie_label": torch.tensor(16),
         "user_label": torch.tensor(3),
         "movie_id": torch.tensor(590),
