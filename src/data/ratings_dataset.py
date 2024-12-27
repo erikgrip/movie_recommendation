@@ -8,7 +8,7 @@ class RatingsDataset(torch.utils.data.Dataset):
     A dataset with just the rating user and movie IDs and labels.
     """
 
-    keys: set = {"user_label", "movie_label", "user_id", "movie_id", "rating"}
+    keys: set = {"user_label", "movie_label", "user_id", "movie_id", "label"}
 
     def __init__(self, data: dict[str, list]):
         """Initializes the MovieLensDataset.
@@ -20,7 +20,7 @@ class RatingsDataset(torch.utils.data.Dataset):
                 "movie_label": List[int],
                 "user_id": List[int],
                 "movie_id": List[int],
-                "rating": List[float],
+                "label": List[float],
             }
         """
         super().__init__()
@@ -43,7 +43,7 @@ class RatingsDataset(torch.utils.data.Dataset):
             if key in {"user_label", "movie_label", "user_id", "movie_id"}:
                 if not all(isinstance(v, int) for v in values):
                     raise ValueError(f"{key} must be a list of integers.")
-            elif key == "rating":
+            elif key == "label":
                 if not all(isinstance(v, float) for v in values):
                     raise ValueError(f"{key} must be a list of floats.")
 
@@ -64,5 +64,5 @@ class RatingsDataset(torch.utils.data.Dataset):
             ),
             "user_id": torch.tensor(self.data["user_id"][idx], dtype=torch.long),
             "movie_id": torch.tensor(self.data["movie_id"][idx], dtype=torch.long),
-            "rating": torch.tensor(self.data["rating"][idx], dtype=torch.float),
+            "label": torch.tensor(self.data["label"][idx], dtype=torch.float),
         }

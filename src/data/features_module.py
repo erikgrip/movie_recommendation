@@ -12,11 +12,10 @@ from src.data.base_module import BaseDataModule
 from src.data.features_dataset import FeaturesDataset
 from src.prepare_data.download_dataset import download_and_extract_data
 from src.prepare_data.features import calculate_features
+from src.utils.data import time_split_data, COL_RENAME
 from src.utils.log import logger
 
 warnings.filterwarnings("ignore", category=FutureWarning)
-
-COL_RENAME = {"movieId": "movie_id", "userId": "user_id"}
 
 PRETRAINED_EMBEDDING_DIM = 80
 
@@ -107,15 +106,9 @@ class FeaturesDataModule(BaseDataModule):
             direction="backward",  # Use the latest snapshot before the interaction
         ).merge(movie_ft, on="movie_id")
 
-        # TODO: Write utility function to split data and use it in both data modules
-        val_size = int(len(data) * self.val_frac)
-        test_size = int(len(data) * self.test_frac)
-
-        # Sort by timestamp and split
-        data = data.sort_values("timestamp", ascending=True)
-        train_data = data[: -(test_size + val_size)]
-        val_data = data[-(test_size + val_size) : -test_size]
-        test_data = data[-test_size:]
+        train_data, val_data, test_data = time_split_data(
+            data, test_frac=self.test_frac, val_frac=self.val_frac
+        )
 
         user_ft_cols = data.columns[data.columns.str.startswith("avg_rating_")].tolist()
         movie_ft_cols = ["title_embedding", "year"] + data.columns[
@@ -125,15 +118,15 @@ class FeaturesDataModule(BaseDataModule):
         self.train_dataset = FeaturesDataset.from_pandas(
             user_features=train_data[user_ft_cols],
             movie_features=train_data[movie_ft_cols],
-            labels=train_data["rating"],
+            labels=train_data["label"],
         )
         self.val_dataset = FeaturesDataset.from_pandas(
             user_features=val_data[user_ft_cols],
             movie_features=val_data[movie_ft_cols],
-            labels=val_data["rating"],
+            labels=val_data["label"],
         )
         self.test_dataset = FeaturesDataset.from_pandas(
             user_features=test_data[user_ft_cols],
             movie_features=test_data[movie_ft_cols],
-            labels=test_data["rating"],
+            labels=test_data["label"],
         )

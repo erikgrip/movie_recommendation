@@ -28,7 +28,7 @@ def fixture_mock_data():
         "movie_label": [0, 1, 2],
         "user_id": [1, 2, 3],
         "movie_id": [1, 2, 3],
-        "rating": [5.0, 4.0, 3.0],
+        "label": [5.0, 4.0, 3.0],
     }
 
 
@@ -41,7 +41,7 @@ def test_movie_lens_dataset(mock_data):
         "movie_label": torch.tensor(0, dtype=torch.long),
         "user_id": torch.tensor(1, dtype=torch.long),
         "movie_id": torch.tensor(1, dtype=torch.long),
-        "rating": torch.tensor(5.0, dtype=torch.float),
+        "label": torch.tensor(5.0, dtype=torch.float),
     }
 
 
@@ -71,6 +71,6 @@ def test_movie_lens_dataset_invalid_data_type(mock_data):
         RatingsDataset(mock_data)
 
     mock_data["user_id"][0] = 1
-    mock_data["rating"][0] = 5  # Int instead of float
+    mock_data["label"][0] = 5  # Int instead of float
     with pytest.raises(ValueError):
         RatingsDataset(mock_data)
