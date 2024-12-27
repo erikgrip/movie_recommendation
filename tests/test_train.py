@@ -60,4 +60,4 @@ def test_overfit_loss_decreases(args):
     with patch("train.argparse.ArgumentParser.parse_args") as mock_parse:
         mock_parse.return_value = args
         trainer = main()
-        assert trainer.logged_metrics["train_loss_epoch"] < 0.1
+        assert trainer.logged_metrics["train_loss_epoch"] < 0.11

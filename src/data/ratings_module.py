@@ -9,6 +9,7 @@ from sklearn.preprocessing import LabelEncoder  # type: ignore
 from src.data.base_module import BaseDataModule
 from src.data.ratings_dataset import RatingsDataset
 from src.prepare_data.download_dataset import download_and_extract_data
+from src.utils.data import COL_RENAME, time_split_data
 from src.utils.log import logger
 
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -57,27 +58,25 @@ class RatingsDataModule(BaseDataModule):
         """Split the data into train and test sets and other setup steps to be done once per GPU."""
         dtypes = {"userId": "int32", "movieId": "int32", "rating": "float32"}
         df = (
-            pd.read_csv(self.rating_data_path)
-            # TODO: Remove this line to get predictions working for new movies
-            .sort_values(by="timestamp", ascending=False)[dtypes.keys()]
-            .astype(dtypes)
-            .rename(columns={"userId": "user_id", "movieId": "movie_id"})
+            pd.read_csv(self.rating_data_path).astype(dtypes).rename(columns=COL_RENAME)
         )
 
         df["user_label"] = self.user_label_encoder.fit_transform(df["user_id"])
         df["movie_label"] = self.movie_label_encoder.fit_transform(df["movie_id"])
 
-        test_split = round(len(df) * self.test_frac)
-        val_split = round(len(df) * (self.test_frac + self.val_frac))
+        train, val, test = time_split_data(
+            df, test_frac=self.test_frac, val_frac=self.val_frac
+        )
 
-        def to_input_data(df: pd.DataFrame) -> Dict[str, list]:
-            return {str(k): list(v) for k, v in df.to_dict(orient="list").items()}
+        def to_dict(df: pd.DataFrame) -> Dict[str, list]:
+            return {
+                str(k): list(v)
+                for k, v in df.to_dict(orient="list").items()
+                if k != "timestamp"
+            }
 
         if stage == "fit":
-            self.train_dataset = RatingsDataset(to_input_data(df.iloc[val_split:]))
-            self.val_dataset = RatingsDataset(
-                to_input_data(df.iloc[test_split:val_split])
-            )
-
+            self.train_dataset = RatingsDataset(to_dict(train))
+            self.val_dataset = RatingsDataset(to_dict(val))
         if stage in ("test", "predict"):
-            self.test_dataset = RatingsDataset(to_input_data(df.iloc[:test_split]))
+            self.test_dataset = RatingsDataset(to_dict(test))
