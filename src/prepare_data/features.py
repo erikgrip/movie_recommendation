@@ -95,7 +95,7 @@ def user_genre_avg_ratings(
 
     Example:
     Input ratings:
-    user_id  movie_id  label    timestamp
+    user_id  movie_id  target   timestamp
     1        1         5        2021-01-01 10:00:00
     1        2         4        2021-01-20 13:00:00
     1        3         3        2021-02-05 15:00:00
@@ -135,7 +135,7 @@ def user_genre_avg_ratings(
 
     # Calculate the average rating for each genre at each point in time
     avg = (
-        add_base_columns(["user_id"], df[GENRES].multiply(df["label"], axis=0))
+        add_base_columns(["user_id"], df[GENRES].multiply(df["target"], axis=0))
         .groupby("user_id")
         .cumsum()
     ).div(df.groupby("user_id")[GENRES].cumsum(), axis=0)

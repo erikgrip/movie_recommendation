@@ -118,15 +118,15 @@ class FeaturesDataModule(BaseDataModule):
         self.train_dataset = FeaturesDataset.from_pandas(
             user_features=train_data[user_ft_cols],
             movie_features=train_data[movie_ft_cols],
-            labels=train_data["label"],
+            target=train_data["target"],
         )
         self.val_dataset = FeaturesDataset.from_pandas(
             user_features=val_data[user_ft_cols],
             movie_features=val_data[movie_ft_cols],
-            labels=val_data["label"],
+            target=val_data["target"],
         )
         self.test_dataset = FeaturesDataset.from_pandas(
             user_features=test_data[user_ft_cols],
             movie_features=test_data[movie_ft_cols],
-            labels=test_data["label"],
+            target=test_data["target"],
         )

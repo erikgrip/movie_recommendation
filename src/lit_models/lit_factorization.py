@@ -35,7 +35,7 @@ class LitFactorizationModel(BaseLitModel):  # pylint: disable=too-many-ancestors
         y_pred = self(
             {"users": batch["user_label"], "movies": batch["movie_label"]}
         ).view(-1)
-        y_true = batch["label"]
+        y_true = batch["target"]
 
         loss = self.mse(y_pred, y_true)
         self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
@@ -48,7 +48,7 @@ class LitFactorizationModel(BaseLitModel):  # pylint: disable=too-many-ancestors
         y_pred = self(
             {"users": batch["user_label"], "movies": batch["movie_label"]}
         ).view(-1)
-        y_true = batch["label"]
+        y_true = batch["target"]
 
         # Calculate loss
         loss = self.mse(y_pred, y_true)
@@ -62,7 +62,7 @@ class LitFactorizationModel(BaseLitModel):  # pylint: disable=too-many-ancestors
         y_pred = self(
             {"users": batch["user_label"], "movies": batch["movie_label"]}
         ).view(-1)
-        y_true = batch["label"]
+        y_true = batch["target"]
 
         # Calculate loss
         loss = self.mse(y_pred, y_true)

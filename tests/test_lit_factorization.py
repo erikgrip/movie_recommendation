@@ -27,7 +27,7 @@ def fixture_batch():
         "movie_label": torch.tensor([1]),
         "user_id": torch.tensor([2]),
         "movie_id": torch.tensor([4]),
-        "label": torch.tensor([5.0]),
+        "target": torch.tensor([5.0]),
     }
 
 
@@ -64,7 +64,7 @@ def test_lit_recommender_test_step_metric_calculation(lit_model):
         "movie_label": torch.tensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]),
         "user_id": torch.tensor([1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2]),
         "movie_id": torch.tensor([1, 2, 3, 4, 5, 6, 7, 8, 15, 18, 20, 25]),
-        "label": torch.tensor(
+        "target": torch.tensor(
             [5.0, 3.0, 4.0, 2.0, 5.0, 4.0, 1.0, 5.0, 3.0, 4.0, 2.0, 5.0]
         ),
     }

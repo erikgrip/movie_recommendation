@@ -112,7 +112,7 @@ def test_setup(
         "movie_label": torch.tensor(16),
         "user_label": torch.tensor(3),
         "movie_id": torch.tensor(590),
-        "label": torch.tensor(4.0),
+        "target": torch.tensor(4.0),
         "user_id": torch.tensor(128783),
     }
 
