@@ -6,7 +6,7 @@ from argparse import ArgumentParser
 import pytest
 import torch
 
-from src.lit_models.base_model import BaseLitModel
+from retrieval_model_training.lit_models.base_model import BaseLitModel
 from tests.mocking import fixture_model, fixture_ratings_data_module
 
 

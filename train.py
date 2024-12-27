@@ -9,7 +9,7 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 
-from src.utils.log import logger
+from utils.log import logger
 
 DEFAULT_DATA_CLASS = "RatingsDataModule"
 DEFAULT_LIT_MODEL_CLASS = "LitFactorizationModel"
@@ -54,9 +54,13 @@ def _setup_parser():
 
     # Get the data and model classes, so that we can add their specific arguments
     temp_args, _ = parser.parse_known_args()
-    data_class = _import_class(f"src.data.{temp_args.data_class}")
-    lit_model_class = _import_class(f"src.lit_models.{temp_args.lit_model_class}")
-    model_class = _import_class(f"src.models.{temp_args.model_class}")
+    data_class = _import_class(f"retrieval_model_training.data.{temp_args.data_class}")
+    lit_model_class = _import_class(
+        f"retrieval_model_training.lit_models.{temp_args.lit_model_class}"
+    )
+    model_class = _import_class(
+        f"retrieval_model_training.models.{temp_args.model_class}"
+    )
 
     # Get data, model, and LitModel specific arguments
     data_group = parser.add_argument_group("Data Args")
@@ -86,9 +90,11 @@ def main():
     """
     parser = _setup_parser()
     args = parser.parse_args()
-    data_class = _import_class(f"src.data.{args.data_class}")
-    lit_model_class = _import_class(f"src.lit_models.{args.lit_model_class}")
-    model_class = _import_class(f"src.models.{args.model_class}")
+    data_class = _import_class(f"retrieval_model_training.data.{args.data_class}")
+    lit_model_class = _import_class(
+        f"retrieval_model_training.lit_models.{args.lit_model_class}"
+    )
+    model_class = _import_class(f"retrieval_model_training.models.{args.model_class}")
 
     data = data_class(args=vars(args))
 

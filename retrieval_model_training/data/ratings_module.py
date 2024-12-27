@@ -6,11 +6,11 @@ from typing import Dict, Optional
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder  # type: ignore
 
-from src.data.base_module import BaseDataModule
-from src.data.ratings_dataset import RatingsDataset
-from src.prepare_data.download_dataset import download_and_extract_data
-from src.utils.data import COL_RENAME, time_split_data
-from src.utils.log import logger
+from prepare_data.download_dataset import download_and_extract_data
+from retrieval_model_training.data.base_module import BaseDataModule
+from retrieval_model_training.data.ratings_dataset import RatingsDataset
+from utils.data import COL_RENAME, time_split_data
+from utils.log import logger
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 

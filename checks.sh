@@ -8,11 +8,17 @@ echo "------------"
 echo "Linting"
 echo "------------"
 
-echo "Linting src/ ..."
-poetry run pylint src/
+echo "Linting prepare_data/ ..."
+poetry run pylint prepare_data/
+
+echo "Linting retrieval_model_training/ ..."
+poetry run pylint retrieval_model_training/
 
 echo "Linting tests/ ..."
 poetry run pylint tests/
+
+echo "Linting utils/ ..."
+poetry run pylint utils/
 
 echo "Linting train.py ..."
 poetry run pylint train.py

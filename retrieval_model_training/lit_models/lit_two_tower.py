@@ -8,7 +8,7 @@ import torch
 from torch import Tensor
 from torchmetrics import MeanSquaredError, Metric
 
-from src.lit_models.base_model import BaseLitModel
+from retrieval_model_training.lit_models.base_model import BaseLitModel
 
 MAX_RATING = 5.0
 

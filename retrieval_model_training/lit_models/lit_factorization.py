@@ -7,7 +7,7 @@ import torch
 from torchmetrics import MeanSquaredError, Metric
 from torchmetrics.retrieval import RetrievalPrecision, RetrievalRecall
 
-from src.lit_models.base_model import BaseLitModel
+from retrieval_model_training.lit_models.base_model import BaseLitModel
 
 
 class LitFactorizationModel(BaseLitModel):  # pylint: disable=too-many-ancestors

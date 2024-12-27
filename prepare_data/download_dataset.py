@@ -3,7 +3,7 @@ from pathlib import Path
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 
-from src.utils.log import logger
+from utils.log import logger
 
 DOWNLOAD_URL = "https://files.grouplens.org/datasets/movielens/ml-latest.zip"
 ZIP_SAVE_DIR = Path("data/raw")

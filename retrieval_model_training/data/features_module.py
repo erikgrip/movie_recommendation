@@ -8,12 +8,12 @@ from typing import Dict, Optional
 
 import pandas as pd
 
-from src.data.base_module import BaseDataModule
-from src.data.features_dataset import FeaturesDataset
-from src.prepare_data.download_dataset import download_and_extract_data
-from src.prepare_data.features import calculate_features
-from src.utils.data import COL_RENAME, time_split_data
-from src.utils.log import logger
+from prepare_data.download_dataset import download_and_extract_data
+from prepare_data.features import calculate_features
+from retrieval_model_training.data.base_module import BaseDataModule
+from retrieval_model_training.data.features_dataset import FeaturesDataset
+from utils.data import COL_RENAME, time_split_data
+from utils.log import logger
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 

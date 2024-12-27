@@ -9,7 +9,7 @@ import pytest
 import torch
 from torch.utils.data import DataLoader
 
-from src.data.ratings_module import RatingsDataModule
+from retrieval_model_training.data.ratings_module import RatingsDataModule
 from tests.mocking import fixture_ratings_data_module
 
 
@@ -80,9 +80,11 @@ def test_prepare_data_already_exctracted():
     data_module = RatingsDataModule()
     with (
         patch(
-            "src.data.ratings_module.RatingsDataModule.rating_data_path"
+            "retrieval_model_training.data.ratings_module.RatingsDataModule.rating_data_path"
         ) as mock_data,
-        patch("src.data.ratings_module.download_and_extract_data") as mock_get_data,
+        patch(
+            "retrieval_model_training.data.ratings_module.download_and_extract_data"
+        ) as mock_get_data,
     ):
         mock_data.exists.return_value = True
         data_module.prepare_data()
