@@ -64,4 +64,4 @@ if __name__ == "__main__":
     df["target"] = df["target"] >= THRESHOLD
 
     print("Data with target:")
-    print(df.info())
+    df.info()
