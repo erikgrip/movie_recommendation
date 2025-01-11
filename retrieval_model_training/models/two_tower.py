@@ -7,7 +7,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from src.prepare_data.features import GENRES
+from prepare_data.features import GENRES
 
 
 class UserTower(nn.Module):

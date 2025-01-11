@@ -3,7 +3,7 @@
 import pytest
 import torch
 
-from src.models.factorization import FactorizationModel
+from retrieval_model_training.models.factorization import FactorizationModel
 
 
 @pytest.fixture(name="model")

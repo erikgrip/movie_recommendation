@@ -8,8 +8,8 @@ from unittest.mock import patch
 import pytest
 import torch
 
-from src.lit_models.lit_factorization import LitFactorizationModel
-from src.models.factorization import FactorizationModel
+from retrieval_model_training.lit_models.lit_factorization import LitFactorizationModel
+from retrieval_model_training.models.factorization import FactorizationModel
 from tests.mocking import fixture_model, fixture_ratings_data_module
 
 
@@ -69,7 +69,7 @@ def test_lit_recommender_test_step_metric_calculation(lit_model):
         ),
     }
     with patch(
-        "src.lit_models.lit_factorization.LitFactorizationModel.forward"
+        "retrieval_model_training.lit_models.lit_factorization.LitFactorizationModel.forward"
     ) as mock_forward:
         # 11 correct predictions and one off by 4
         mock_forward.return_value = torch.tensor(

@@ -7,8 +7,8 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-from src.data.ratings_module import RatingsDataModule
-from src.models.factorization import FactorizationModel
+from retrieval_model_training.data.ratings_module import RatingsDataModule
+from retrieval_model_training.models.factorization import FactorizationModel
 
 MOCK_ZIP_PATH = "tests/fixtures/sample_100.zip"
 
@@ -22,7 +22,7 @@ def fixture_ratings_data_module():
 
     with (
         patch(
-            "src.data.ratings_module.RatingsDataModule.data_dir",
+            "retrieval_model_training.data.ratings_module.RatingsDataModule.data_dir",
             MagicMock(return_value=data_dir),
         ),
     ):

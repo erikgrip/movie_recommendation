@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import torch
 
-from src.data.ratings_dataset import RatingsDataset
+from retrieval_model_training.data.ratings_dataset import RatingsDataset
 
 
 @pytest.fixture(name="mock_data_file")

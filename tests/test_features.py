@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.prepare_data.features import (
+from prepare_data.features import (
     calculate_features,
     clean_movie_titles,
     extract_movie_release_year,
@@ -99,7 +99,7 @@ def test_clean_movie_titles():
 def test_text_embedding(dim, expected_output):
     titles = pd.Series(["title1", "title2", "title3"])
 
-    with patch("src.prepare_data.features.SentenceTransformer") as mock_st:
+    with patch("prepare_data.features.SentenceTransformer") as mock_st:
         mock_st.return_value.encode.return_value = [
             np.array([0.1, 0.2, 0.3]),
             np.array([0.4, 0.5, 0.6]),
@@ -159,7 +159,7 @@ def test_user_genre_avg_ratings():
     )
 
     with patch(
-        "src.prepare_data.features.GENRES", ["action", "comedy", "some_other_genre"]
+        "prepare_data.features.GENRES", ["action", "comedy", "some_other_genre"]
     ):
         output = user_genre_avg_ratings(ratings, movie_genre_dummies)
 
@@ -225,8 +225,8 @@ def test_calculate_features():
 
     mock_genres = ["adventure", "animation", "children", "comedy", "fantasy"]
     with (
-        patch("src.prepare_data.features.GENRES", mock_genres),
-        patch("src.prepare_data.features.SentenceTransformer") as mock_st,
+        patch("prepare_data.features.GENRES", mock_genres),
+        patch("prepare_data.features.SentenceTransformer") as mock_st,
     ):
         mock_st.return_value.encode.return_value = np.array(
             [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
