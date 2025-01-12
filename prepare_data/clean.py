@@ -1,5 +1,6 @@
 """Cleans the raw data and saves the cleaned data to disk."""
 
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -52,7 +53,7 @@ def impute_missing_year(
 if __name__ == "__main__":
     if OUTPUT_MOVIE_DATA_PATH.exists() and OUTPUT_RATING_DATA_PATH.exists():
         print("Cleaned data already exists.")
-        exit()
+        sys.exit(0)
     if not Path(OUTPUT_DIR).exists():
         Path(OUTPUT_DIR).mkdir(parents=True)
 
@@ -62,7 +63,6 @@ if __name__ == "__main__":
     movies = pd.read_csv(INPUT_MOVIE_DATA_PATH).rename(columns=COL_RENAME)
 
     ratings["timestamp"] = pd.to_datetime(ratings["timestamp"], unit="s")
-    ratings["year"] = ratings["timestamp"].dt.year
 
     # Drop movies that have not been rated
     movies = movies[movies["movie_id"].isin(ratings["movie_id"])]
@@ -72,4 +72,4 @@ if __name__ == "__main__":
     movies["title"] = clean_movie_titles(movies["title"])
 
     movies.to_parquet(OUTPUT_MOVIE_DATA_PATH)
-    ratings.to_parquet(OUTPUT_RATING_DATA_PATH, partition_cols=["year"])
+    ratings.to_parquet(OUTPUT_RATING_DATA_PATH)

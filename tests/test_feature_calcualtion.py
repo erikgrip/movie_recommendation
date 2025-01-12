@@ -7,11 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from prepare_data.features import (
-    genre_dummies,
-    text_embedding,
-    user_genre_avg_ratings,
-)
+from prepare_data.features import genre_dummies, text_embedding, user_genre_avg_ratings
 
 
 def test_genre_dummies():
@@ -39,7 +35,9 @@ def test_genre_dummies_filter():
 def test_genre_dummies_rename():
     movies = pd.DataFrame({"movie_id": [1], "genres": ["Action|Sci-Fi"]})
 
-    expected_output = pd.DataFrame({"movie_id": [1], "is_action": [1], "is_sci_fi": [1]})
+    expected_output = pd.DataFrame(
+        {"movie_id": [1], "is_action": [1], "is_sci_fi": [1]}
+    )
     output = genre_dummies(movies)
 
     pd.testing.assert_frame_equal(output, expected_output)

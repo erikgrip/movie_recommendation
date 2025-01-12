@@ -42,9 +42,12 @@ EMBEDDING_MODEL_NAME = "mixedbread-ai/mxbai-embed-xsmall-v1"
 
 def text_embedding(texts: list[str], dim: Optional[int] = None) -> list:
     """Calculates the sentence embeddings for the given text using the SentenceTransformer model."""
+    if not texts:
+        return []
+
     model = SentenceTransformer(EMBEDDING_MODEL_NAME)
-    embeddings = model.encode(texts, show_progress_bar=True).tolist()
-    return [emb[:dim] for emb in embeddings] if dim else embeddings
+    embeddings = model.encode(texts, show_progress_bar=True)
+    return [emb[:dim] for emb in embeddings] if dim else list(embeddings)
 
 
 def genre_dummies(movie_data: pd.DataFrame) -> pd.DataFrame:
@@ -125,7 +128,6 @@ def user_genre_avg_ratings(
     )
 
     return add_base_columns(["user_id", "timestamp"], result)
-
 
 
 if __name__ == "__main__":
