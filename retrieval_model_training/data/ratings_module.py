@@ -6,7 +6,6 @@ from typing import Dict, Optional
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder  # type: ignore
 
-from prepare_data.download import download_and_extract_data
 from retrieval_model_training.data.base_module import BaseDataModule
 from retrieval_model_training.data.ratings_dataset import RatingsDataset
 from utils.data import COL_RENAME, time_split_data
@@ -52,7 +51,10 @@ class RatingsDataModule(BaseDataModule):
         if self.rating_data_path.exists():
             logger.info("Ratings data already exists.")
         else:
-            download_and_extract_data()
+            raise FileNotFoundError(
+                f"Ratings data not found at {self.rating_data_path}. "
+                "Please run the data preparation script first."
+            )
 
     def setup(self, stage: Optional[str] = None):
         """Split the data into train and test sets and other setup steps to be done once per GPU."""

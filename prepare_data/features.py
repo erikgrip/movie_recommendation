@@ -1,12 +1,9 @@
 """Feature engineering functions for the movie lens dataset."""
 
 from pathlib import Path
-from tempfile import TemporaryDirectory as tempdir
-from typing import Optional, Tuple
+from typing import Optional
 
-import numpy as np
 import pandas as pd
-import polars as pl
 from sentence_transformers import SentenceTransformer
 
 GENRES = [
@@ -129,23 +126,6 @@ def user_genre_avg_ratings(
 
     return add_base_columns(["user_id", "timestamp"], result)
 
-
-def calculate_features(
-    rating_data: pd.DataFrame, movie_data: pd.DataFrame, embedding_dim: int = 256
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Calculates user features from the ratings and movies dataframes."""
-    movie_genre_dummies = genre_dummies(movie_data)
-
-    users = user_genre_avg_ratings(rating_data, movie_genre_dummies)
-
-    movie_data["title_embedding"] = text_embedding(movie_data["title"], embedding_dim)
-
-    movie_data = (
-        movie_data.drop(columns=["title", "genres"])
-        .merge(movie_genre_dummies, on="movie_id")
-        .rename(columns={k: "is_" + k for k in GENRES})
-    )
-    return movie_data, users
 
 
 if __name__ == "__main__":
