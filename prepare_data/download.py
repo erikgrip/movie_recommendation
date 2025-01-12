@@ -34,17 +34,15 @@ def extract_files() -> None:
                 save_file.write(file.read())
 
 
-def download_and_extract_data() -> None:
-    """Download the MovieLens data and extract the selected files."""
+if __name__ == "__main__":
     if all(Path(ft_file).exists() for ft_file in EXTRACTED_FILES.values()):
         logger.info("Extracted files already exist.")
     else:
-        if not Path(ZIP_SAVE_PATH).exists():
+        if Path(ZIP_SAVE_PATH).exists():
+            logger.info("Zip file already exists. Skipping download.")
+        else:
             os.makedirs(ZIP_SAVE_DIR, exist_ok=True)
             logger.info("Downloading MovieLens data to %s ...", ZIP_SAVE_PATH)
             download_zip(DOWNLOAD_URL, str(ZIP_SAVE_PATH))
         logger.info("Extracting files ...")
         extract_files()
-
-    logger.info("Data extraction and preparation complete.")
-    logger.info("Features data saved to %s.", [str(f) for f in FEATURE_FILES])
