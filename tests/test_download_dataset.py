@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from prepare_data.download_dataset import EXTRACTED_FILES, download_zip, extract_files
+from prepare_data.download import EXTRACTED_FILES, download_zip, extract_files
 
 
 @pytest.fixture(scope="function", name="zip_save_path")

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from prepare_data.download_dataset import download_and_extract_data
+from prepare_data.download import download_and_extract_data
 from prepare_data.features import calculate_features
 from utils.data import COL_RENAME
 from utils.log import logger

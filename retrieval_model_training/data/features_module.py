@@ -8,7 +8,7 @@ from typing import Dict, Optional
 
 import pandas as pd
 
-from prepare_data.download_dataset import download_and_extract_data
+from prepare_data.download import download_and_extract_data
 from prepare_data.features import calculate_features
 from retrieval_model_training.data.base_module import BaseDataModule
 from retrieval_model_training.data.features_dataset import FeaturesDataset

@@ -1,8 +1,12 @@
 """Feature engineering functions for the movie lens dataset."""
 
+from pathlib import Path
+from tempfile import TemporaryDirectory as tempdir
 from typing import Optional, Tuple
 
 import pandas as pd
+import polars as pl
+import numpy as np
 from sentence_transformers import SentenceTransformer
 
 GENRES = [
@@ -27,67 +31,41 @@ GENRES = [
     "western",
 ]
 
+INPUT_DIR = Path("data/clean")
+OUTPUT_DIR = Path("data/features")
+
+INPUT_MOVIE_DATA_PATH = INPUT_DIR / "movies.parquet"
+INPUT_RATING_DATA_PATH = INPUT_DIR / "ratings.parquet"
+
 # SentenceTransformer model name to use for text embeddings.
 # NOTE: If updated - make sure to use a Matryoshka model, i.e. a model
 # that produces embeddings that can be truncated to a smaller dimension.
 EMBEDDING_MODEL_NAME = "mixedbread-ai/mxbai-embed-xsmall-v1"
 
 
-def extract_movie_release_year(titles: pd.Series) -> pd.Series:
-    """Extracts year from the movie title and returns it as a float.
-
-    For example, for the title "Toy Story (1995)", this function will return 1995.0.
-    The output will have null values for movies where the year could not be extracted.
-    """
-    return titles.str.extract(r"\((\d{4})\)").astype("float")[0]
-
-
-def clean_movie_titles(titles: pd.Series) -> pd.Series:
-    """Cleans the movie titles by removing the year and trailing whitespace."""
-    return titles.str.replace(r"\((\d{4})\)", "", regex=True).str.strip()
-
-
-def text_embedding(text: pd.Series, dim: Optional[int] = None) -> list:
+def text_embedding(texts: list[str], dim: Optional[int] = None) -> list:
     """Calculates the sentence embeddings for the given text using the SentenceTransformer model."""
     model = SentenceTransformer(EMBEDDING_MODEL_NAME)
-    if dim is None:
-        return model.encode(text.to_list(), show_progress_bar=True)
-    return [emb[:dim] for emb in model.encode(text.to_list(), show_progress_bar=True)]
+    embeddings = model.encode(texts, show_progress_bar=True).tolist()
+    return [emb[:dim] for emb in embeddings] if dim else embeddings
 
 
-def impute_missing_year(movies: pd.DataFrame, ratings: pd.DataFrame) -> pd.DataFrame:
-    """Imputes missing years in the movies DataFrame using the year of the first rating.
-
-    Converts the year column to an integer type.
-    """
-    year_first_rated = (
-        ratings.sort_values("timestamp")
-        .drop_duplicates("movie_id", keep="first")
-        .set_index("movie_id")["timestamp"]
-        .apply(lambda x: x.year)
-    )
-    mask = movies["year"].isna()
-    movies.loc[mask, "year"] = movies.loc[mask, "movie_id"].map(year_first_rated)
-    movies["year"] = movies["year"].astype("int")
-    return movies
-
-
-def genre_dummies(movies: pd.DataFrame) -> pd.DataFrame:
+def genre_dummies(movie_data: pd.DataFrame) -> pd.DataFrame:
     """Extracts dummy features from movie dataframe `genres` column.
 
     Returns a new dataframe with the movie_id and dummy columns for each genre.
     """
     dummies = (
-        movies["genres"]
+        movie_data["genres"]
         .str.get_dummies(sep="|")
         .drop(columns="(no genres listed)", errors="ignore")
-        .rename(columns=lambda x: x.lower().replace("-", "_"))
+        .rename(columns=lambda x: "is_" + x.lower().replace("-", "_"))
     )
-    return pd.concat([movies["movie_id"], dummies], axis=1)
+    return pd.concat([movie_data["movie_id"], dummies], axis=1)
 
 
 def user_genre_avg_ratings(
-    ratings: pd.DataFrame, movie_genre_dummies: pd.DataFrame
+    rating_data: pd.DataFrame, movie_genre_dummies: pd.DataFrame
 ) -> pd.DataFrame:
     """Calculates the average rating a user has given to each genre at each point in time.
 
@@ -122,7 +100,7 @@ def user_genre_avg_ratings(
     initial_rating = 3
     calc_columns = [f"avg_rating_{col}" for col in GENRES]
 
-    df = ratings.merge(movie_genre_dummies, on="movie_id")
+    df = rating_data.merge(movie_genre_dummies, on="movie_id")
 
     # Add genre even if it wasn't watched
     for genre in GENRES:
@@ -135,7 +113,7 @@ def user_genre_avg_ratings(
 
     # Calculate the average rating for each genre at each point in time
     avg = (
-        add_base_columns(["user_id"], df[GENRES].multiply(df["target"], axis=0))
+        add_base_columns(["user_id"], df[GENRES].multiply(df["rating"], axis=0))
         .groupby("user_id")
         .cumsum()
     ).div(df.groupby("user_id")[GENRES].cumsum(), axis=0)
@@ -153,21 +131,43 @@ def user_genre_avg_ratings(
 
 
 def calculate_features(
-    ratings: pd.DataFrame, movies: pd.DataFrame, embedding_dim: int = 256
+    rating_data: pd.DataFrame, movie_data: pd.DataFrame, embedding_dim: int = 256
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Calculates user features from the ratings and movies dataframes."""
-    movie_genre_dummies = genre_dummies(movies)
+    movie_genre_dummies = genre_dummies(movie_data)
 
-    users = user_genre_avg_ratings(ratings, movie_genre_dummies)
+    users = user_genre_avg_ratings(rating_data, movie_genre_dummies)
 
-    movies["year"] = extract_movie_release_year(movies["title"])
-    movies = impute_missing_year(movies, ratings)
-    movies["title"] = clean_movie_titles(movies["title"])
-    movies["title_embedding"] = text_embedding(movies["title"], embedding_dim)
+    movie_data["title_embedding"] = text_embedding(movie_data["title"], embedding_dim)
 
-    movies = (
-        movies.drop(columns=["title", "genres"])
+    movie_data = (
+        movie_data.drop(columns=["title", "genres"])
         .merge(movie_genre_dummies, on="movie_id")
         .rename(columns={k: "is_" + k for k in GENRES})
     )
-    return movies, users
+    return movie_data, users
+
+
+if __name__ == "__main__":
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    ratings = pd.read_parquet(INPUT_RATING_DATA_PATH)
+    movies = pd.read_parquet(INPUT_MOVIE_DATA_PATH)
+
+    # Movie title embeddings
+    # pd.DataFrame(
+    #    {
+    #        "movie_id": movies["movie_id"].to_list(),
+    #        "title_embedding": text_embedding(movies["title"].to_list()),
+    #    }
+    # ).to_parquet(OUTPUT_DIR / "movie_title_embeddings.parquet")
+
+    # Movie genre dummies
+    movie_genres = genre_dummies(movies)
+    movie_genres.to_parquet(OUTPUT_DIR / "movie_genre_dummies.parquet")
+
+    # User genre average ratings
+    user_genre_avg_ratings(ratings, movie_genres).to_parquet(
+        OUTPUT_DIR / "user_genre_avg_ratings.parquet"
+    )
+
