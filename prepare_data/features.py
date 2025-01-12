@@ -4,9 +4,9 @@ from pathlib import Path
 from tempfile import TemporaryDirectory as tempdir
 from typing import Optional, Tuple
 
+import numpy as np
 import pandas as pd
 import polars as pl
-import numpy as np
 from sentence_transformers import SentenceTransformer
 
 GENRES = [
@@ -170,4 +170,3 @@ if __name__ == "__main__":
     user_genre_avg_ratings(ratings, movie_genres).to_parquet(
         OUTPUT_DIR / "user_genre_avg_ratings.parquet"
     )
-

@@ -1,6 +1,7 @@
 """Cleans the raw data and saves the cleaned data to disk."""
 
 from pathlib import Path
+
 import pandas as pd
 
 INPUT_DIR = Path("data/extracted")
