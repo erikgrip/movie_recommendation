@@ -3,8 +3,19 @@
 from pathlib import Path
 from typing import Optional
 
-import pandas as pd
+import polars as pl
 from sentence_transformers import SentenceTransformer
+
+INPUT_DIR = Path("data/clean")
+OUTPUT_DIR = Path("data/features")
+
+INPUT_MOVIE_DATA_PATH = INPUT_DIR / "movies.parquet"
+INPUT_RATING_DATA_PATH = INPUT_DIR / "ratings.parquet"
+
+# SentenceTransformer model name to use for text embeddings.
+# NOTE: If updated - make sure to use a Matryoshka model, i.e. a model
+# that produces embeddings that can be truncated to a smaller dimension.
+EMBEDDING_MODEL_NAME = "mixedbread-ai/mxbai-embed-xsmall-v1"
 
 GENRES = [
     "action",
@@ -28,127 +39,89 @@ GENRES = [
     "western",
 ]
 
-INPUT_DIR = Path("data/clean")
-OUTPUT_DIR = Path("data/features")
 
-INPUT_MOVIE_DATA_PATH = INPUT_DIR / "movies.parquet"
-INPUT_RATING_DATA_PATH = INPUT_DIR / "ratings.parquet"
-
-# SentenceTransformer model name to use for text embeddings.
-# NOTE: If updated - make sure to use a Matryoshka model, i.e. a model
-# that produces embeddings that can be truncated to a smaller dimension.
-EMBEDDING_MODEL_NAME = "mixedbread-ai/mxbai-embed-xsmall-v1"
-
-
-def text_embedding(texts: list[str], dim: Optional[int] = None) -> list:
-    """Calculates the sentence embeddings for the given text using the SentenceTransformer model."""
-    if not texts:
-        return []
-
+def text_embedding_polars(movies: pl.DataFrame, dim: Optional[int] = None):
+    texts = movies["title"].to_list()
     model = SentenceTransformer(EMBEDDING_MODEL_NAME)
-    embeddings = model.encode(texts, show_progress_bar=True)
-    return [emb[:dim] for emb in embeddings] if dim else list(embeddings)
+    embeddings = model.encode(texts, show_progress_bar=True, batch_size=64)
+    if dim:
+        embeddings = [emb[:dim] for emb in embeddings]
+    return pl.DataFrame({"movie_id": movies["movie_id"], "title_embedding": embeddings})
 
 
-def genre_dummies(movie_data: pd.DataFrame) -> pd.DataFrame:
-    """Extracts dummy features from movie dataframe `genres` column.
-
-    Returns a new dataframe with the movie_id and dummy columns for each genre.
-    """
-    dummies = (
-        movie_data["genres"]
-        .str.get_dummies(sep="|")
-        .drop(columns="(no genres listed)", errors="ignore")
-        .rename(columns=lambda x: "is_" + x.lower().replace("-", "_"))
-    )
-    return pd.concat([movie_data["movie_id"], dummies], axis=1)
-
-
-def user_genre_avg_ratings(
-    rating_data: pd.DataFrame, movie_genre_dummies: pd.DataFrame
-) -> pd.DataFrame:
-    """Calculates the average rating a user has given to each genre at each point in time.
-
-    Has 3 as initial value for each genre.
-
-    Example:
-    Input ratings:
-    user_id  movie_id  target   timestamp
-    1        1         5        2021-01-01 10:00:00
-    1        2         4        2021-01-20 13:00:00
-    1        3         3        2021-02-05 15:00:00
-    1        4         2        2021-02-10 09:00:00
-    2        3         4        2021-01-05 10:00:00
-    2        1         4        2021-03-02 10:00:00
-
-    Input movie_genres:
-    movie_id  action comedy ...
-    1         1      0
-    2         0      1
-    3         1      0
-    4         0      0
-
-    Returns:
-    user_id  timestamp            avg_rating_action avg_rating_comedy ...
-    1        2021-01-01 10:00:00  3.0               3.0
-    1        2021-01-20 13:00:00  5.0               3.0
-    1        2021-02-05 15:00:00  5.0               4.0
-    1        2021-02-10 09:00:00  4.0               4.0
-    2        2021-01-05 10:00:00  3.0               3.0
-    2        2021-03-02 10:00:00  3.0               4.0
-    """
-    initial_rating = 3
-    calc_columns = [f"avg_rating_{col}" for col in GENRES]
-
-    df = rating_data.merge(movie_genre_dummies, on="movie_id")
-
-    # Add genre even if it wasn't watched
-    for genre in GENRES:
-        if genre not in df.columns:
-            df[genre] = 0
-
-    def add_base_columns(cols: list, dataframe: pd.DataFrame) -> pd.DataFrame:
-        """Map aggregated columns to the original dataframe."""
-        return pd.concat([df[cols], dataframe], axis=1)
-
-    # Calculate the average rating for each genre at each point in time
-    avg = (
-        add_base_columns(["user_id"], df[GENRES].multiply(df["rating"], axis=0))
-        .groupby("user_id")
-        .cumsum()
-    ).div(df.groupby("user_id")[GENRES].cumsum(), axis=0)
-    avg.columns = pd.Index(calc_columns)
-
-    # Shift the average ratings by one to avoid data leakage
-    result = (
-        add_base_columns(["user_id"], avg)
-        .groupby(["user_id"])[calc_columns]
-        .shift(1)
-        .fillna(initial_rating)
+def genre_dummies_polars(movie_data: pl.DataFrame) -> pl.DataFrame:
+    """Creates dummy variables for genres in the movie data."""
+    present_genres = movie_data["genres"].explode().unique().to_list()
+    return (
+        movie_data
+        # Add empty integer columns for all genres
+        .explode("genres")
+        .to_dummies("genres")
+        .rename({f"genres_{gen}": f"is_{gen}" for gen in GENRES})
+        .with_columns(
+            [
+                pl.lit(0, dtype=pl.Int8).alias(f"is_{gen}")
+                for gen in GENRES
+                if gen not in present_genres
+            ]
+        )
+        .drop("genres_null")
+        .select(["movie_id"] + [f"is_{gen}" for gen in GENRES])
     )
 
-    return add_base_columns(["user_id", "timestamp"], result)
+
+def user_genre_avg_ratings_polars(
+    rating_data: pl.DataFrame, movie_genre_dummies: pl.DataFrame
+) -> pl.DataFrame:
+    initial_rating = 3.0
+    genre_columns = [f"is_{genre}" for genre in GENRES]
+
+    # Merge ratings with genre dummies and convert to LazyFrame
+    df = rating_data.join(movie_genre_dummies, on="movie_id", how="left").lazy()
+
+    # Sort data by user_id and timestamp
+    df = df.sort(["user_id", "timestamp"])
+
+    # Compute cumulative averages directly without intermediate columns
+    avg_rating_exprs = [
+        (
+            (
+                (pl.col(gen) * pl.col("rating")).cum_sum().over("user_id")
+                / pl.col(gen).cum_sum().over("user_id")
+            )
+            .shift(1)
+            .fill_null(initial_rating)
+            .alias(f"avg_rating_{gen.replace('is_', '')}")
+        )
+        for gen in genre_columns
+    ]
+    df = df.with_columns(avg_rating_exprs)
+
+    # Select required columns and collect the result
+    result = df.select(
+        ["user_id", "timestamp"] + [f"avg_rating_{genre}" for genre in GENRES]
+    ).collect()
+
+    return result
 
 
 if __name__ == "__main__":
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    ratings = pd.read_parquet(INPUT_RATING_DATA_PATH)
-    movies = pd.read_parquet(INPUT_MOVIE_DATA_PATH)
+    print("Calculating features...")
+    ratings = pl.read_parquet(INPUT_RATING_DATA_PATH)
+    movies = pl.read_parquet(INPUT_MOVIE_DATA_PATH)
 
-    # Movie title embeddings
-    # pd.DataFrame(
-    #    {
-    #        "movie_id": movies["movie_id"].to_list(),
-    #        "title_embedding": text_embedding(movies["title"].to_list()),
-    #    }
-    # ).to_parquet(OUTPUT_DIR / "movie_title_embeddings.parquet")
+    ## Movie title embeddings
+    # print("Calculating movie title embeddings...")
+    # title_embeddings = text_embedding_polars(movies)
+    # title_embeddings.write_parquet(OUTPUT_DIR / "movie_title_embeddings.parquet")
 
     # Movie genre dummies
-    movie_genres = genre_dummies(movies)
-    movie_genres.to_parquet(OUTPUT_DIR / "movie_genre_dummies.parquet")
+    print("Calculating movie genre dummies...")
+    movie_genres = genre_dummies_polars(movies)
+    movie_genres.write_parquet(OUTPUT_DIR / "movie_genre_dummies.parquet")
 
-    # User genre average ratings
-    user_genre_avg_ratings(ratings, movie_genres).to_parquet(
-        OUTPUT_DIR / "user_genre_avg_ratings.parquet"
-    )
+    print("Calculating user genre average ratings...")
+    user_genre_avg = user_genre_avg_ratings_polars(ratings, movie_genres)
+    user_genre_avg.write_parquet(OUTPUT_DIR / "user_genre_avg_ratings.parquet")

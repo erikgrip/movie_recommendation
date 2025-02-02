@@ -50,6 +50,16 @@ def impute_missing_year(
     return movie_data
 
 
+def clean_genres(genres: pd.Series) -> pd.Series:
+    """Cleans the genres column."""
+    return (
+        genres.str.replace("-", "_")
+        .str.lower()
+        .str.split("|")
+        .apply(lambda x: [gen for gen in x if gen != "(no genres listed)"])
+    )
+
+
 if __name__ == "__main__":
     if OUTPUT_MOVIE_DATA_PATH.exists() and OUTPUT_RATING_DATA_PATH.exists():
         print("Cleaned data already exists.")
@@ -58,9 +68,8 @@ if __name__ == "__main__":
         Path(OUTPUT_DIR).mkdir(parents=True)
 
     COL_RENAME = {"movieId": "movie_id", "userId": "user_id"}
-
-    ratings = pd.read_csv(INPUT_RATING_DATA_PATH).rename(columns=COL_RENAME)
     movies = pd.read_csv(INPUT_MOVIE_DATA_PATH).rename(columns=COL_RENAME)
+    ratings = pd.read_csv(INPUT_RATING_DATA_PATH).rename(columns=COL_RENAME)
 
     ratings["timestamp"] = pd.to_datetime(ratings["timestamp"], unit="s")
 
@@ -70,6 +79,7 @@ if __name__ == "__main__":
     movies["year"] = extract_movie_release_year(movies["title"])
     movies = impute_missing_year(movies, ratings)
     movies["title"] = clean_movie_titles(movies["title"])
+    movies["genres"] = clean_genres(movies["genres"])
 
-    movies.to_parquet(OUTPUT_MOVIE_DATA_PATH)
-    ratings.to_parquet(OUTPUT_RATING_DATA_PATH)
+    movies.to_parquet(OUTPUT_MOVIE_DATA_PATH, index=False)
+    ratings.to_parquet(OUTPUT_RATING_DATA_PATH, index=False)
