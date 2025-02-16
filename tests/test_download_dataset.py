@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from prepare_data.download_dataset import EXTRACTED_FILES, download_zip, extract_files
+from prepare_data.download import EXTRACTED_FILES, download_zip, extract_files
 
 
 @pytest.fixture(scope="function", name="zip_save_path")
@@ -43,7 +43,7 @@ def test_download_zip(tmp_path, monkeypatch):
         with open(tmp_save_path, "w", encoding="utf-8") as file:
             file.write("Mock zip file")
 
-    monkeypatch.setattr("prepare_data.download_dataset.urlretrieve", mock_urlretrieve)
+    monkeypatch.setattr("prepare_data.download.urlretrieve", mock_urlretrieve)
     download_zip("some_url", str(tmp_save_path))
 
     assert tmp_save_path.exists()
@@ -55,12 +55,9 @@ def test_extract_files(tmp_path, zip_save_path):
     os.mkdir(tmp_path.joinpath("data"))
 
     with (
+        patch("prepare_data.download.ZIP_SAVE_PATH", zip_save_path),
         patch(
-            "prepare_data.download_dataset.ZIP_SAVE_PATH",
-            zip_save_path,
-        ),
-        patch(
-            "prepare_data.download_dataset.EXTRACTED_FILES",
+            "prepare_data.download.EXTRACTED_FILES",
             {
                 "ml-latest/ratings.csv": tmp_path / "ratings.csv",
                 "ml-latest/movies.csv": tmp_path / "movies.csv",
@@ -76,8 +73,7 @@ def test_extract_files(tmp_path, zip_save_path):
 def test_extract_files_when_zip_file_not_found(tmp_path):
     """Test the extract_files function when the zip file is not found."""
     with patch(
-        "prepare_data.download_dataset.ZIP_SAVE_PATH",
-        tmp_path.joinpath("nonexistent.zip"),
+        "prepare_data.download.ZIP_SAVE_PATH", tmp_path.joinpath("nonexistent.zip")
     ):
         with pytest.raises(FileNotFoundError):
             extract_files()

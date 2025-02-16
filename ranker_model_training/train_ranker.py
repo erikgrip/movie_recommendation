@@ -3,8 +3,6 @@ from pathlib import Path
 
 import pandas as pd
 
-from prepare_data.download_dataset import download_and_extract_data
-from prepare_data.features import calculate_features
 from utils.data import COL_RENAME
 from utils.log import logger
 
@@ -31,7 +29,10 @@ if __name__ == "__main__":
     elif rating_data_path.exists() and movie_data_path.exists():
         logger.info("Ratings and movie data data already exists.")
     else:
-        download_and_extract_data()
+        raise FileNotFoundError(
+            f"Data not found at {rating_data_path} and {movie_data_path}. "
+            "Please run the data preparation script first."
+        )
 
     movies = pd.read_csv(movie_data_path).rename(columns=COL_RENAME)
     ratings = pd.read_csv(rating_data_path).rename(columns=COL_RENAME)
@@ -39,16 +40,7 @@ if __name__ == "__main__":
     ratings["timestamp"] = pd.to_datetime(ratings["timestamp"], unit="s")
 
     # Calculate features
-    movie_ft, user_ft = calculate_features(ratings, movies)
-
-    print("User features:")
-    print(user_ft.head())
-
-    print("Movie features:")
-    print(movie_ft.head())
-
-    print("Rating data:")
-    print(ratings.head())
+    movie_ft, user_ft = pd.DataFrame(), pd.DataFrame()
 
     df = pd.merge_asof(
         ratings.sort_values("timestamp"),

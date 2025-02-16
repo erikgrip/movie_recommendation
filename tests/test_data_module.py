@@ -2,9 +2,6 @@
 
 # pylint: disable=unused-import
 
-from unittest.mock import patch
-
-import pandas as pd
 import pytest
 import torch
 from torch.utils.data import DataLoader
@@ -56,39 +53,12 @@ def test_num_labels_before_setup_raises_error():
         data_module.num_movie_labels()
 
 
-def test_num_labels_after_prepare_data():
+def test_num_labels_after_setup():
     """Test num_user_labels and num_movie_labels after setup."""
     data_module = RatingsDataModule()
-    data_module.prepare_data()
     data_module.setup()
     assert data_module.num_user_labels() == 10
     assert data_module.num_movie_labels() == 97
-
-
-def test_prepare_data():
-    """Test the prepare_data method."""
-    data_module = RatingsDataModule()
-    data_module.prepare_data()
-    with open(data_module.rating_data_path, "r", encoding="utf-8") as file:
-        data = file.readlines()
-    assert data[0].strip() == "userId,movieId,rating,timestamp"
-    assert len(data) == 101
-
-
-def test_prepare_data_already_exctracted():
-    """Test the prepare_data method when the data is already extracted."""
-    data_module = RatingsDataModule()
-    with (
-        patch(
-            "retrieval_model_training.data.ratings_module.RatingsDataModule.rating_data_path"
-        ) as mock_data,
-        patch(
-            "retrieval_model_training.data.ratings_module.download_and_extract_data"
-        ) as mock_get_data,
-    ):
-        mock_data.exists.return_value = True
-        data_module.prepare_data()
-        mock_get_data.assert_not_called()
 
 
 @pytest.mark.parametrize(
