@@ -1,10 +1,14 @@
 """Feature engineering functions for the movie lens dataset."""
 
+import tempfile
+from glob import glob
 from pathlib import Path
 from typing import Optional
 
 import polars as pl
 from sentence_transformers import SentenceTransformer
+
+from utils.log import logger
 
 INPUT_DIR = Path("data/clean")
 OUTPUT_DIR = Path("data/features")
@@ -40,16 +44,19 @@ GENRES = [
 ]
 
 
-def text_embedding_polars(movies: pl.DataFrame, dim: Optional[int] = None):
-    texts = movies["title"].to_list()
+def movie_title_embeddings(movie_df: pl.DataFrame, dim: Optional[int] = None):
+    """Calculates text embeddings for movie titles using SentenceTransformer."""
+    texts = movie_df["title"].to_list()
     model = SentenceTransformer(EMBEDDING_MODEL_NAME)
     embeddings = model.encode(texts, show_progress_bar=True, batch_size=64)
     if dim:
         embeddings = [emb[:dim] for emb in embeddings]
-    return pl.DataFrame({"movie_id": movies["movie_id"], "title_embedding": embeddings})
+    return pl.DataFrame(
+        {"movie_id": movie_df["movie_id"], "title_embedding": embeddings}
+    )
 
 
-def genre_dummies_polars(movie_data: pl.DataFrame) -> pl.DataFrame:
+def genre_dummies(movie_data: pl.DataFrame) -> pl.DataFrame:
     """Creates dummy variables for genres in the movie data."""
     present_genres = movie_data["genres"].explode().unique().to_list()
     return (
@@ -70,9 +77,10 @@ def genre_dummies_polars(movie_data: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def user_genre_avg_ratings_polars(
+def calculate_user_genre_avg_ratings(
     rating_data: pl.DataFrame, movie_genre_dummies: pl.DataFrame
-) -> pl.LazyFrame:
+) -> pl.DataFrame:
+    """Calculates the average rating for each genre for each user."""
     initial_rating = 3.0
     genre_columns = [f"is_{genre}" for genre in GENRES]
 
@@ -98,31 +106,48 @@ def user_genre_avg_ratings_polars(
     df = df.with_columns(avg_rating_exprs)
 
     # Select required columns and collect the result
-    result = df.select(
+    return df.select(
         ["user_id", "timestamp"] + [f"avg_rating_{genre}" for genre in GENRES]
-    )
-
-    return result
+    ).collect()
 
 
 if __name__ == "__main__":
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    print("Calculating features...")
+    logger.info("Reading data...")
     ratings = pl.read_parquet(INPUT_RATING_DATA_PATH)
     movies = pl.read_parquet(INPUT_MOVIE_DATA_PATH)
 
-    ## Movie title embeddings
-    # print("Calculating movie title embeddings...")
-    # title_embeddings = text_embedding_polars(movies)
-    # title_embeddings.write_parquet(OUTPUT_DIR / "movie_title_embeddings.parquet")
+    logger.info("Calculating movie title embeddings...")
+    title_embeddings = movie_title_embeddings(movies)
+    title_embeddings.write_parquet(OUTPUT_DIR / "movie_title_embeddings.parquet")
 
-    # Movie genre dummies
-    print("Calculating movie genre dummies...")
-    movie_genres = genre_dummies_polars(movies)
+    logger.info("Creating movie genre dummies...")
+    movie_genres = genre_dummies(movies)
     movie_genres.write_parquet(OUTPUT_DIR / "movie_genre_dummies.parquet")
 
-    print("Calculating user genre average ratings...")
-    user_genre_avg = user_genre_avg_ratings_polars(ratings, movie_genres)
-    user_genre_avg.show_graph()
-    user_genre_avg.sink_parquet(OUTPUT_DIR / "user_genre_avg_ratings.parquet")
+    user_ids = ratings["user_id"].unique().to_list()
+    NUM_CHUNKS = 100
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for chunk in range(1, NUM_CHUNKS + 1):
+            if chunk % 10 == 0:
+                print(f"Processing chunk {chunk} of {NUM_CHUNKS}...")
+
+            # Split user IDs into chunks
+            chunk_size = len(user_ids) // NUM_CHUNKS
+            chunk_user_ids = user_ids[(chunk - 1) * chunk_size : chunk * chunk_size]
+
+            chunk_ratings = ratings.filter(pl.col("user_id").is_in(chunk_user_ids))
+            chunk_user_genre_avg = calculate_user_genre_avg_ratings(
+                chunk_ratings, movie_genres
+            )
+            chunk_user_genre_avg.write_parquet(
+                f"{tmpdir}/user_genre_avg_ratings_{chunk}.parquet"
+            )
+
+        user_genre_avg_ratings = pl.concat(
+            [pl.scan_parquet(file) for file in glob(f"{tmpdir}/*.parquet")]
+        )
+        user_genre_avg_ratings.sink_parquet(
+            OUTPUT_DIR / "user_genre_avg_ratings.parquet"
+        )

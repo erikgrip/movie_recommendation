@@ -7,7 +7,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from prepare_data.features import genre_dummies, text_embedding, user_genre_avg_ratings
+from prepare_data.features import (
+    calculate_user_genre_avg_ratings,
+    genre_dummies,
+    text_embedding,
+)
 
 
 def test_genre_dummies():
@@ -119,6 +123,6 @@ def test_user_genre_avg_ratings():
     with patch(
         "prepare_data.features.GENRES", ["action", "comedy", "some_other_genre"]
     ):
-        output = user_genre_avg_ratings(ratings, movie_genre_dummies)
+        output = calculate_user_genre_avg_ratings(ratings, movie_genre_dummies)
 
     pd.testing.assert_frame_equal(output, expected_output)
