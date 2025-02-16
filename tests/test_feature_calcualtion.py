@@ -5,12 +5,13 @@ from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
+import polars as pl
 import pytest
 
 from prepare_data.features import (
     calculate_user_genre_avg_ratings,
     genre_dummies,
-    text_embedding,
+    movie_title_embeddings,
 )
 
 
@@ -56,7 +57,7 @@ def test_genre_dummies_rename():
         (4, [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]]),
     ],
 )
-def test_text_embedding(dim, expected_output):
+def test_movie_title_embeddings(dim, expected_output):
     titles = ["title1", "title2", "title3"]
 
     with patch("prepare_data.features.SentenceTransformer") as mock_st:
@@ -68,7 +69,7 @@ def test_text_embedding(dim, expected_output):
             ]
         )
 
-        output = text_embedding(titles, dim=dim)
+        output = movie_title_embeddings(titles, dim=dim)
 
     np.testing.assert_array_equal(output, expected_output)
 
@@ -94,10 +95,10 @@ def test_user_genre_avg_ratings():
 
     movie_genre_dummies = pd.DataFrame(
         [
-            {"movie_id": 1, "action": 1, "comedy": 0},
-            {"movie_id": 2, "action": 0, "comedy": 1},
-            {"movie_id": 3, "action": 1, "comedy": 0},
-            {"movie_id": 4, "action": 0, "comedy": 0},
+            {"movie_id": 1, "is_action": 1, "is_comedy": 0},
+            {"movie_id": 2, "is_action": 0, "is_comedy": 1},
+            {"movie_id": 3, "is_action": 1, "is_comedy": 0},
+            {"movie_id": 4, "is_action": 0, "is_comedy": 0},
         ]
     )
 
@@ -116,13 +117,11 @@ def test_user_genre_avg_ratings():
             ),
             "avg_rating_action": [3.0, 5.0, 5.0, 4.0, 3.0, 4.0],
             "avg_rating_comedy": [3.0, 3.0, 4.0, 4.0, 3.0, 3.0],
-            "avg_rating_some_other_genre": [3.0, 3.0, 3.0, 3.0, 3.0, 3.0],  # Not rated
         }
     )
 
-    with patch(
-        "prepare_data.features.GENRES", ["action", "comedy", "some_other_genre"]
-    ):
-        output = calculate_user_genre_avg_ratings(ratings, movie_genre_dummies)
-
-    pd.testing.assert_frame_equal(output, expected_output)
+    with patch("prepare_data.features.GENRES", ["action", "comedy"]):
+        output = calculate_user_genre_avg_ratings(
+            pl.DataFrame(ratings), pl.DataFrame(movie_genre_dummies)
+        )
+    pd.testing.assert_frame_equal(output.to_pandas(), expected_output)

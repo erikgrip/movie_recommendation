@@ -81,7 +81,7 @@ def calculate_user_genre_avg_ratings(
     rating_data: pl.DataFrame, movie_genre_dummies: pl.DataFrame
 ) -> pl.DataFrame:
     """Calculates the average rating for each genre for each user."""
-    initial_rating = 3.0
+    initial_rating = 3
     genre_columns = [f"is_{genre}" for genre in GENRES]
 
     # Merge ratings with genre dummies and convert to LazyFrame
@@ -93,22 +93,19 @@ def calculate_user_genre_avg_ratings(
     # Compute cumulative averages directly without intermediate columns
     avg_rating_exprs = [
         (
-            (
-                (pl.col(gen) * pl.col("rating")).cum_sum().over("user_id")
-                / pl.col(gen).cum_sum().over("user_id")
-            )
-            .shift(1)
-            .fill_null(initial_rating)
-            .alias(f"avg_rating_{gen.replace('is_', '')}")
-        )
+            (pl.col(gen) * pl.col("rating")).cum_sum().shift(1).over("user_id")
+            / pl.col(gen).cum_sum().shift(1).over("user_id")
+        ).alias(f"avg_rating_{gen.replace('is_', '')}")
         for gen in genre_columns
     ]
-    df = df.with_columns(avg_rating_exprs)
 
-    # Select required columns and collect the result
-    return df.select(
-        ["user_id", "timestamp"] + [f"avg_rating_{genre}" for genre in GENRES]
-    ).collect()
+    return (
+        df.with_columns(avg_rating_exprs)
+        .select(["user_id", "timestamp"] + [f"avg_rating_{genre}" for genre in GENRES])
+        .collect()
+        .fill_nan(initial_rating)
+        .fill_null(initial_rating)
+    )
 
 
 if __name__ == "__main__":
@@ -127,6 +124,7 @@ if __name__ == "__main__":
     movie_genres.write_parquet(OUTPUT_DIR / "movie_genre_dummies.parquet")
 
     user_ids = ratings["user_id"].unique().to_list()
+
     NUM_CHUNKS = 100
     with tempfile.TemporaryDirectory() as tmpdir:
         for chunk in range(1, NUM_CHUNKS + 1):
