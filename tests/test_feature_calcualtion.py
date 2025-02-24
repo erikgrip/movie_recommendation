@@ -16,36 +16,55 @@ from prepare_data.features import (
 
 
 def test_genre_dummies():
-    movies = pd.DataFrame({"movie_id": [1, 2], "genres": ["Action", "Action|Thriller"]})
+    movies = pl.DataFrame(
+        {"movie_id": [1, 2], "genres": [["action"], ["action", "thriller"]]}
+    )
 
     expected_output = pd.DataFrame(
-        {"movie_id": [1, 2], "is_action": [1, 1], "is_thriller": [0, 1]}
+        {"movie_id": [1, 2], "is_action": [1, 1], "is_thriller": [0, 1]}, dtype="int8"
     )
-    output = genre_dummies(movies)
+    with patch("prepare_data.features.GENRES", ["action", "thriller"]):
+        output = genre_dummies(movies)
 
-    pd.testing.assert_frame_equal(output, expected_output)
+    pd.testing.assert_frame_equal(output.to_pandas(), expected_output)
 
 
-def test_genre_dummies_filter():
-    movies = pd.DataFrame(
-        {"movie_id": [1, 2], "genres": ["Action", "(no genres listed)"]}
+def test_genre_dummies_no_genre():
+    movies = pl.DataFrame({"movie_id": [1, 2], "genres": [["action"], []]})
+
+    expected_output = pd.DataFrame(
+        {"movie_id": [1, 2], "is_action": [1, 0]}, dtype="int8"
     )
 
-    expected_output = pd.DataFrame({"movie_id": [1, 2], "is_action": [1, 0]})
-    output = genre_dummies(movies)
+    with patch("prepare_data.features.GENRES", ["action"]):
+        output = genre_dummies(movies)
 
-    pd.testing.assert_frame_equal(output, expected_output)
+    pd.testing.assert_frame_equal(output.to_pandas(), expected_output)
 
 
 def test_genre_dummies_rename():
-    movies = pd.DataFrame({"movie_id": [1], "genres": ["Action|Sci-Fi"]})
+    movies = pl.DataFrame({"movie_id": [1], "genres": [["action", "sci_fi"]]})
 
     expected_output = pd.DataFrame(
-        {"movie_id": [1], "is_action": [1], "is_sci_fi": [1]}
+        {"movie_id": [1], "is_action": [1], "is_sci_fi": [1]}, dtype="int8"
     )
-    output = genre_dummies(movies)
+    with patch("prepare_data.features.GENRES", ["action", "sci_fi"]):
+        output = genre_dummies(movies)
 
-    pd.testing.assert_frame_equal(output, expected_output)
+    pd.testing.assert_frame_equal(output.to_pandas(), expected_output)
+
+
+def test_genre_dummies_add_missing():
+    movies = pl.DataFrame({"movie_id": [1], "genres": [["action", "sci_fi"]]})
+
+    expected_output = pd.DataFrame(
+        {"movie_id": [1], "is_action": [1], "is_sci_fi": [1], "is_thriller": [0]},
+        dtype="int8",
+    )
+    with patch("prepare_data.features.GENRES", ["action", "sci_fi", "thriller"]):
+        output = genre_dummies(movies)
+
+    pd.testing.assert_frame_equal(output.to_pandas(), expected_output)
 
 
 @pytest.mark.parametrize(
@@ -58,8 +77,9 @@ def test_genre_dummies_rename():
     ],
 )
 def test_movie_title_embeddings(dim, expected_output):
-    titles = ["title1", "title2", "title3"]
-
+    titles_df = pl.DataFrame(
+        {"movie_id": [1, 2, 3], "title": ["title1", "title2", "title3"]}
+    )
     with patch("prepare_data.features.SentenceTransformer") as mock_st:
         mock_st.return_value.encode.return_value = np.array(
             [
@@ -69,9 +89,9 @@ def test_movie_title_embeddings(dim, expected_output):
             ]
         )
 
-        output = movie_title_embeddings(titles, dim=dim)
+        output = movie_title_embeddings(titles_df, dim=dim)
 
-    np.testing.assert_array_equal(output, expected_output)
+    np.testing.assert_array_equal(output["title_embedding"], expected_output)
 
 
 def test_user_genre_avg_ratings():
