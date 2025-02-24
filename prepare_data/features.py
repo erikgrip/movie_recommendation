@@ -57,23 +57,24 @@ def movie_title_embeddings(movie_df: pl.DataFrame, dim: Optional[int] = None):
 
 
 def genre_dummies(movie_data: pl.DataFrame) -> pl.DataFrame:
-    """Creates dummy variables for genres in the movie data."""
-    present_genres = movie_data["genres"].explode().unique().to_list()
+    """Creates dummy variables for all defined genres."""
+    present_genres = movie_data["genres"].explode().drop_nulls().unique().to_list()
     return (
-        movie_data
-        # Add empty integer columns for all genres
-        .explode("genres")
+        movie_data.explode("genres")
         .to_dummies("genres")
-        .rename({f"genres_{gen}": f"is_{gen}" for gen in GENRES})
+        .group_by("movie_id", maintain_order=True)
+        .agg(pl.sum(*[f"genres_{gen}" for gen in present_genres]))
+        .rename({f"genres_{gen}": f"is_{gen}" for gen in GENRES}, strict=False)
         .with_columns(
             [
-                pl.lit(0, dtype=pl.Int8).alias(f"is_{gen}")
+                pl.lit(0).alias(f"is_{gen}")
                 for gen in GENRES
                 if gen not in present_genres
             ]
         )
-        .drop("genres_null")
+        .drop(["genres_null"], strict=False)
         .select(["movie_id"] + [f"is_{gen}" for gen in GENRES])
+        .cast(pl.Int8)
     )
 
 
