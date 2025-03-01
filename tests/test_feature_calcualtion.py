@@ -21,7 +21,7 @@ def test_genre_dummies():
     )
 
     expected_output = pd.DataFrame(
-        {"movie_id": [1, 2], "is_action": [1, 1], "is_thriller": [0, 1]}, dtype="int8"
+        {"movie_id": [1, 2], "is_action": [1, 1], "is_thriller": [0, 1]}, dtype="int64"
     )
     with patch("prepare_data.features.GENRES", ["action", "thriller"]):
         output = genre_dummies(movies)
@@ -33,7 +33,7 @@ def test_genre_dummies_no_genre():
     movies = pl.DataFrame({"movie_id": [1, 2], "genres": [["action"], []]})
 
     expected_output = pd.DataFrame(
-        {"movie_id": [1, 2], "is_action": [1, 0]}, dtype="int8"
+        {"movie_id": [1, 2], "is_action": [1, 0]}, dtype="int64"
     )
 
     with patch("prepare_data.features.GENRES", ["action"]):
@@ -46,7 +46,7 @@ def test_genre_dummies_rename():
     movies = pl.DataFrame({"movie_id": [1], "genres": [["action", "sci_fi"]]})
 
     expected_output = pd.DataFrame(
-        {"movie_id": [1], "is_action": [1], "is_sci_fi": [1]}, dtype="int8"
+        {"movie_id": [1], "is_action": [1], "is_sci_fi": [1]}, dtype="int64"
     )
     with patch("prepare_data.features.GENRES", ["action", "sci_fi"]):
         output = genre_dummies(movies)
@@ -59,7 +59,7 @@ def test_genre_dummies_add_missing():
 
     expected_output = pd.DataFrame(
         {"movie_id": [1], "is_action": [1], "is_sci_fi": [1], "is_thriller": [0]},
-        dtype="int8",
+        dtype="int64",
     )
     with patch("prepare_data.features.GENRES", ["action", "sci_fi", "thriller"]):
         output = genre_dummies(movies)
