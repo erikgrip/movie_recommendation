@@ -3,20 +3,13 @@ from pathlib import Path
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 
+from prepare_data.config import (
+    DOWNLOAD_URL,
+    EXTRACT_DIR,
+    EXTRACTED_FILES,
+    ZIP_SAVE_PATH,
+)
 from utils.log import logger
-
-DOWNLOAD_URL = "https://files.grouplens.org/datasets/movielens/ml-latest.zip"
-ZIP_SAVE_DIR = Path("data/raw")
-EXTRACT_DIR = Path("data/extracted")
-PROCESSED_DIR = Path("data/processed")
-
-ZIP_SAVE_PATH = ZIP_SAVE_DIR / "ml-latest.zip"
-# path in zip: path to save extracted file to
-EXTRACTED_FILES = {
-    "ml-latest/ratings.csv": EXTRACT_DIR / "ratings.csv",
-    "ml-latest/movies.csv": EXTRACT_DIR / "movies.csv",
-}
-FEATURE_FILES = [PROCESSED_DIR / "movies.csv", PROCESSED_DIR / "ratings.csv"]
 
 
 def download_zip(url: str, save_path: str) -> None:
@@ -41,7 +34,7 @@ if __name__ == "__main__":
         if Path(ZIP_SAVE_PATH).exists():
             logger.info("Zip file already exists. Skipping download.")
         else:
-            os.makedirs(ZIP_SAVE_DIR, exist_ok=True)
+            os.makedirs(os.path.dirname(ZIP_SAVE_PATH), exist_ok=True)
             logger.info("Downloading MovieLens data to %s ...", ZIP_SAVE_PATH)
             download_zip(DOWNLOAD_URL, str(ZIP_SAVE_PATH))
         logger.info("Extracting files ...")

@@ -5,14 +5,13 @@ from pathlib import Path
 
 import pandas as pd
 
-INPUT_DIR = Path("data/extracted")
-OUTPUT_DIR = Path("data/clean")
-
-INPUT_MOVIE_DATA_PATH = INPUT_DIR / "movies.csv"
-INPUT_RATING_DATA_PATH = INPUT_DIR / "ratings.csv"
-
-OUTPUT_MOVIE_DATA_PATH = OUTPUT_DIR / "movies.parquet"
-OUTPUT_RATING_DATA_PATH = OUTPUT_DIR / "ratings.parquet"
+from prepare_data.config import (
+    CLEAN_DIR,
+    CLEAN_MOVIE_DATA_PATH,
+    CLEAN_RATING_DATA_PATH,
+    EXTRACTED_MOVIE_DATA_PATH,
+    EXTRACTED_RATING_DATA_PATH,
+)
 
 
 def extract_movie_release_year(titles: pd.Series) -> pd.Series:
@@ -61,15 +60,15 @@ def clean_genres(genres: pd.Series) -> pd.Series:
 
 
 if __name__ == "__main__":
-    if OUTPUT_MOVIE_DATA_PATH.exists() and OUTPUT_RATING_DATA_PATH.exists():
+    if CLEAN_MOVIE_DATA_PATH.exists() and CLEAN_RATING_DATA_PATH.exists():
         print("Cleaned data already exists.")
         sys.exit(0)
-    if not Path(OUTPUT_DIR).exists():
-        Path(OUTPUT_DIR).mkdir(parents=True)
+    if not Path(CLEAN_DIR).exists():
+        Path(CLEAN_DIR).mkdir(parents=True)
 
     COL_RENAME = {"movieId": "movie_id", "userId": "user_id"}
-    movies = pd.read_csv(INPUT_MOVIE_DATA_PATH).rename(columns=COL_RENAME)
-    ratings = pd.read_csv(INPUT_RATING_DATA_PATH).rename(columns=COL_RENAME)
+    movies = pd.read_csv(EXTRACTED_MOVIE_DATA_PATH).rename(columns=COL_RENAME)
+    ratings = pd.read_csv(EXTRACTED_RATING_DATA_PATH).rename(columns=COL_RENAME)
 
     ratings["timestamp"] = pd.to_datetime(ratings["timestamp"], unit="s")
 
@@ -81,5 +80,5 @@ if __name__ == "__main__":
     movies["title"] = clean_movie_titles(movies["title"])
     movies["genres"] = clean_genres(movies["genres"])
 
-    movies.to_parquet(OUTPUT_MOVIE_DATA_PATH, index=False)
-    ratings.to_parquet(OUTPUT_RATING_DATA_PATH, index=False)
+    movies.to_parquet(CLEAN_MOVIE_DATA_PATH, index=False)
+    ratings.to_parquet(CLEAN_RATING_DATA_PATH, index=False)
