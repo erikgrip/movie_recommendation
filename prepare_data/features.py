@@ -2,19 +2,20 @@
 
 import tempfile
 from glob import glob
-from pathlib import Path
 from typing import Optional
 
 import polars as pl
 from sentence_transformers import SentenceTransformer
 
+from prepare_data.config import (
+    CLEAN_MOVIE_DATA_PATH,
+    CLEAN_RATING_DATA_PATH,
+    FEATURE_MOVIE_GENRE_DUMMIES_PATH,
+    FEATURE_MOVIE_TITLE_EMBEDDINGS_PATH,
+    FEATURE_USER_GENRE_AVG_RATINGS_PATH,
+    FEATURES_DIR,
+)
 from utils.log import logger
-
-INPUT_DIR = Path("data/clean")
-OUTPUT_DIR = Path("data/features")
-
-INPUT_MOVIE_DATA_PATH = INPUT_DIR / "movies.parquet"
-INPUT_RATING_DATA_PATH = INPUT_DIR / "ratings.parquet"
 
 # SentenceTransformer model name to use for text embeddings.
 # NOTE: If updated - make sure to use a Matryoshka model, i.e. a model
@@ -74,7 +75,7 @@ def genre_dummies(movie_data: pl.DataFrame) -> pl.DataFrame:
         )
         .drop(["genres_null"], strict=False)
         .select(["movie_id"] + [f"is_{gen}" for gen in GENRES])
-        .cast(pl.Int8)
+        .cast(pl.Int64)
     )
 
 
@@ -110,19 +111,19 @@ def calculate_user_genre_avg_ratings(
 
 
 if __name__ == "__main__":
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    FEATURES_DIR.mkdir(parents=True, exist_ok=True)
 
     logger.info("Reading data...")
-    ratings = pl.read_parquet(INPUT_RATING_DATA_PATH)
-    movies = pl.read_parquet(INPUT_MOVIE_DATA_PATH)
+    ratings = pl.read_parquet(CLEAN_RATING_DATA_PATH)
+    movies = pl.read_parquet(CLEAN_MOVIE_DATA_PATH)
 
     logger.info("Calculating movie title embeddings...")
     title_embeddings = movie_title_embeddings(movies)
-    title_embeddings.write_parquet(OUTPUT_DIR / "movie_title_embeddings.parquet")
+    title_embeddings.write_parquet(FEATURE_MOVIE_TITLE_EMBEDDINGS_PATH)
 
     logger.info("Creating movie genre dummies...")
     movie_genres = genre_dummies(movies)
-    movie_genres.write_parquet(OUTPUT_DIR / "movie_genre_dummies.parquet")
+    movie_genres.write_parquet(FEATURE_MOVIE_GENRE_DUMMIES_PATH)
 
     user_ids = ratings["user_id"].unique().to_list()
 
@@ -147,6 +148,4 @@ if __name__ == "__main__":
         user_genre_avg_ratings = pl.concat(
             [pl.scan_parquet(file) for file in glob(f"{tmpdir}/*.parquet")]
         )
-        user_genre_avg_ratings.sink_parquet(
-            OUTPUT_DIR / "user_genre_avg_ratings.parquet"
-        )
+        user_genre_avg_ratings.sink_parquet(FEATURE_USER_GENRE_AVG_RATINGS_PATH)
