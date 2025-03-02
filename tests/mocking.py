@@ -8,7 +8,9 @@ import pandas as pd
 import pytest
 
 from retrieval_model_training.data.ratings_module import RatingsDataModule
-from retrieval_model_training.models.factorization import FactorizationModel
+from retrieval_model_training.models.neural_collaborative_filtering import (
+    NeuralCollaborativeFilteringModel,
+)
 
 MOCK_ZIP_PATH = "tests/fixtures/sample_100.zip"
 
@@ -38,7 +40,7 @@ def fixture_ratings_data_module():
 
 @pytest.fixture(name="model")
 def fixture_model(ratings_data_module):
-    """Create an example LitFactorizationModel model."""
+    """Create an example LitNeuralCollaborativeFilteringModel model."""
     ratings_data_module.prepare_data()
     ratings_data_module.setup()
 
@@ -47,7 +49,7 @@ def fixture_model(ratings_data_module):
         "hidden_dim": 4,
         "dropout_rate": 0.0,
     }
-    return FactorizationModel(
+    return NeuralCollaborativeFilteringModel(
         num_users=ratings_data_module.num_user_labels(),
         num_movies=ratings_data_module.num_movie_labels(),
         args=args,

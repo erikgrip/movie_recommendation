@@ -1,5 +1,5 @@
 # pylint: disable=unused-argument
-""" Movie recommendation model. """
+""" Movie recommendation model using Neural Collaborative Filtering. """
 
 from typing import Dict, Optional
 
@@ -10,8 +10,10 @@ from torchmetrics.retrieval import RetrievalPrecision, RetrievalRecall
 from retrieval_model_training.lit_models.base_model import BaseLitModel
 
 
-class LitFactorizationModel(BaseLitModel):  # pylint: disable=too-many-ancestors
-    """PyTorch Lightning module for the movie recommendation model."""
+class LitNeuralCollaborativeFilteringModel(
+    BaseLitModel
+):  # pylint: disable=too-many-ancestors
+    """PyTorch Lightning module for the neural collaborative filtering recommendation model."""
 
     def __init__(self, model: torch.nn.Module, args: Optional[Dict] = None):
         super().__init__(model, args)
@@ -26,6 +28,8 @@ class LitFactorizationModel(BaseLitModel):  # pylint: disable=too-many-ancestors
 
     def forward(self, x: Dict[str, torch.Tensor]) -> torch.Tensor:
         """Forward pass of the model."""
+        if "users" not in x or "movies" not in x:
+            raise ValueError("Input must contain 'users' and 'movies' keys")
         return self.model(**x)
 
     def training_step(
@@ -92,4 +96,6 @@ class LitFactorizationModel(BaseLitModel):  # pylint: disable=too-many-ancestors
         self, batch: Dict[str, torch.Tensor], batch_idx: int, dataloader_idx: int = 0
     ) -> torch.Tensor:
         """Prediction step."""
-        return self(batch["user_label"], batch["movie_label"]).view(-1)
+        return self(
+            {"users": batch["user_label"], "movies": batch["movie_label"]}
+        ).view(-1)

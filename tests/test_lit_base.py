@@ -11,7 +11,7 @@ from tests.mocking import fixture_model, fixture_ratings_data_module
 
 
 def test_lit_recommender_init(model):
-    """Test the initialization of LitFactorizationModel."""
+    """Test the initialization of LitNeuralCollaborativeFilteringModel."""
     lit_model = BaseLitModel(model)
     assert lit_model.optimizer_class == torch.optim.Adam
     assert lit_model.lr == 1e-3
