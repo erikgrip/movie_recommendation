@@ -27,7 +27,7 @@ def fixture_lit_model(model):
 def fixture_batch():
     """
     Create a sample batch of recommendation data for testing.
-    
+
     The batch contains a single user-movie interaction with corresponding labels and target rating.
     """
     yield {
@@ -42,7 +42,7 @@ def fixture_batch():
 def test_lit_recommender_forward(lit_model):
     """
     Test the forward pass of the recommendation model.
-    
+
     Verifies that the model produces tensors of the expected shape and type
     when given user and movie inputs.
     """
@@ -55,7 +55,7 @@ def test_lit_recommender_forward(lit_model):
 def test_lit_recommender_training_step(lit_model, batch):
     """
     Test the training step of the recommendation model.
-    
+
     Verifies that the training step produces a valid loss value when
     processing a batch of data.
     """
@@ -67,7 +67,7 @@ def test_lit_recommender_training_step(lit_model, batch):
 def test_lit_recommender_test_step(lit_model, batch):
     """
     Test the evaluation step of the recommendation model.
-    
+
     Verifies that the test step produces the expected evaluation metrics
     (loss, RMSE, precision, recall) with valid values.
     """
@@ -83,7 +83,7 @@ def test_lit_recommender_test_step(lit_model, batch):
 def test_lit_recommender_test_step_metric_calculation(lit_model):
     """
     Test the detailed metric calculation in the test step.
-    
+
     Uses a mock to control model predictions and verifies that metrics
     (loss, RMSE, precision, recall) are calculated correctly for a larger batch.
     """
