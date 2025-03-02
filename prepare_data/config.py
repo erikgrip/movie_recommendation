@@ -31,6 +31,7 @@ CLEAN_MOVIE_DATA_PATH = CLEAN_DIR / "movies.parquet"
 CLEAN_RATING_DATA_PATH = CLEAN_DIR / "ratings.parquet"
 
 # Feature paths
-FEATURE_MOVIE_TITLE_EMBEDDINGS_PATH = FEATURES_DIR / "movie_title_embeddings.parquet"
 FEATURE_MOVIE_GENRE_DUMMIES_PATH = FEATURES_DIR / "movie_genre_dummies.parquet"
+FEATURE_MOVIE_INFO_PATH = FEATURES_DIR / "movie_info.parquet"
+FEATURE_MOVIE_TITLE_EMBEDDINGS_PATH = FEATURES_DIR / "movie_title_embeddings.parquet"
 FEATURE_USER_GENRE_AVG_RATINGS_PATH = FEATURES_DIR / "user_genre_avg_ratings.parquet"

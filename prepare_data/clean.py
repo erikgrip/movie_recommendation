@@ -75,7 +75,7 @@ if __name__ == "__main__":
     # Drop movies that have not been rated
     movies = movies[movies["movie_id"].isin(ratings["movie_id"])]
 
-    movies["year"] = extract_movie_release_year(movies["title"])
+    movies["release_year"] = extract_movie_release_year(movies["title"])
     movies = impute_missing_year(movies, ratings)
     movies["title"] = clean_movie_titles(movies["title"])
     movies["genres"] = clean_genres(movies["genres"])
