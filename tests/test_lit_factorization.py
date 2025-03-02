@@ -1,22 +1,22 @@
-"""Tests for the LitFactorizationModel class."""
-
 # pylint: disable=unused-import
+"""Tests for the LitNeuralCollaborativeFilteringModel class."""
 
-from argparse import ArgumentParser
+
 from unittest.mock import patch
 
 import pytest
 import torch
 
-from retrieval_model_training.lit_models.lit_factorization import LitFactorizationModel
-from retrieval_model_training.models.factorization import FactorizationModel
+from retrieval_model_training.lit_models.lit_neural_collaborative_filtering import (
+    LitNeuralCollaborativeFilteringModel,
+)
 from tests.mocking import fixture_model, fixture_ratings_data_module
 
 
 @pytest.fixture(name="lit_model")
 def fixture_lit_model(model):
-    """Create an example LitFactorizationModel model."""
-    return LitFactorizationModel(model)
+    """Create an example LitNeuralCollaborativeFilteringModel model."""
+    return LitNeuralCollaborativeFilteringModel(model)
 
 
 @pytest.fixture(name="batch")
@@ -32,7 +32,7 @@ def fixture_batch():
 
 
 def test_lit_recommender_forward(lit_model):
-    """Test the forward method of LitFactorizationModel."""
+    """Test the forward method of LitNeuralCollaborativeFilteringModel."""
     input_ = {"users": torch.tensor([0]), "movies": torch.tensor([1])}
     output = lit_model(input_)
     assert isinstance(output, torch.Tensor)
@@ -40,14 +40,14 @@ def test_lit_recommender_forward(lit_model):
 
 
 def test_lit_recommender_training_step(lit_model, batch):
-    """Test the training_step method of LitFactorizationModel."""
+    """Test the training_step method of LitNeuralCollaborativeFilteringModel."""
     loss = lit_model.training_step(batch=batch, batch_idx=0)
     assert isinstance(loss, torch.Tensor)
     assert loss.item() >= 0.0
 
 
 def test_lit_recommender_test_step(lit_model, batch):
-    """Test the test_step method of LitFactorizationModel."""
+    """Test the test_step method of LitNeuralCollaborativeFilteringModel."""
     output = lit_model.test_step(batch=batch, batch_idx=0)
     assert isinstance(output, dict)
     assert output.keys() == {"loss", "rmse", "precision", "recall"}
@@ -58,7 +58,7 @@ def test_lit_recommender_test_step(lit_model, batch):
 
 
 def test_lit_recommender_test_step_metric_calculation(lit_model):
-    """Test the test_step_outputs method of LitFactorizationModel."""
+    """Test the test_step_outputs method of LitNeuralCollaborativeFilteringModel."""
     batch = {
         "user_label": torch.tensor([0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]),
         "movie_label": torch.tensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]),
@@ -69,7 +69,8 @@ def test_lit_recommender_test_step_metric_calculation(lit_model):
         ),
     }
     with patch(
-        "retrieval_model_training.lit_models.lit_factorization.LitFactorizationModel.forward"
+        "retrieval_model_training.lit_models.lit_neural_collaborative_filtering."
+        "LitNeuralCollaborativeFilteringModel.forward"
     ) as mock_forward:
         # 11 correct predictions and one off by 4
         mock_forward.return_value = torch.tensor(

@@ -1,4 +1,4 @@
-""" Train a movie Factorization model. """
+""" Train a movie recommendation model using Neural Collaborative Filtering. """
 
 import argparse
 import importlib
@@ -12,8 +12,8 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from utils.log import logger
 
 DEFAULT_DATA_CLASS = "RatingsDataModule"
-DEFAULT_LIT_MODEL_CLASS = "LitFactorizationModel"
-DEFAULT_MODEL_CLASS = "FactorizationModel"
+DEFAULT_LIT_MODEL_CLASS = "LitNeuralCollaborativeFilteringModel"
+DEFAULT_MODEL_CLASS = "NeuralCollaborativeFilteringModel"
 DEFAULT_EARLY_STOPPING = 10
 
 # Set random seeds
@@ -84,7 +84,7 @@ def main():
         --max_epochs=10 \
         --devices=0 \
         --num_workers=20
-        --model_class=FactorizationModel \
+        --model_class=NeuralCollaborativeFilteringModel \
         --data_class=RatingsDataModule
     ```
     """
@@ -98,8 +98,8 @@ def main():
 
     data = data_class(args=vars(args))
 
-    if args.model_class == "FactorizationModel":
-        # FactorizationModel needs the number of users and movies
+    if args.model_class == "NeuralCollaborativeFilteringModel":
+        # NeuralCollaborativeFilteringModel needs the number of users and movies
         # only available after the data is prepared
         data.prepare_data()
         data.setup()
@@ -151,7 +151,7 @@ def main():
     trainer.fit(lit_model, datamodule=data)
     if not args.overfit_batches:
         trainer.test(lit_model, datamodule=data)
-        # trainer.predict(lit_model, datamodule=data)
+        trainer.predict(lit_model, datamodule=data)
 
     best_model_path = model_checkpoint_callback.best_model_path
     if best_model_path:

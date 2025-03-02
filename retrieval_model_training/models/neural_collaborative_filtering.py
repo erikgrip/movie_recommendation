@@ -14,9 +14,12 @@ HIDDEN_DIM = 256
 DROPOUT_RATE = 0.2
 
 
-class FactorizationModel(nn.Module):  # pylint: disable=too-many-instance-attributes
+class NeuralCollaborativeFilteringModel(
+    nn.Module
+):  # pylint: disable=too-many-instance-attributes
     """
-    PyTorch model for factorization-based recommendation with user and movie embeddings.
+    PyTorch model for neural collaborative filtering with user and movie embeddings.
+    This combines matrix factorization with neural networks to capture non-linear relationships.
     """
 
     def __init__(self, num_users: int, num_movies: int, args: Optional[Dict] = None):

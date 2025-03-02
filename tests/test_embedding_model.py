@@ -3,7 +3,9 @@
 import pytest
 import torch
 
-from retrieval_model_training.models.factorization import FactorizationModel
+from retrieval_model_training.models.neural_collaborative_filtering import (
+    NeuralCollaborativeFilteringModel,
+)
 
 
 @pytest.fixture(name="model")
@@ -16,7 +18,9 @@ def fixture_model():
         "hidden_dim": 256,
         "dropout_rate": 0.2,
     }
-    return FactorizationModel(num_users=num_users, num_movies=num_movies, args=args)
+    return NeuralCollaborativeFilteringModel(
+        num_users=num_users, num_movies=num_movies, args=args
+    )
 
 
 def test_factorization_model_init(model):
