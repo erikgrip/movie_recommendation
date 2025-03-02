@@ -11,6 +11,7 @@ from prepare_data.config import (
     CLEAN_MOVIE_DATA_PATH,
     CLEAN_RATING_DATA_PATH,
     FEATURE_MOVIE_GENRE_DUMMIES_PATH,
+    FEATURE_MOVIE_INFO_PATH,
     FEATURE_MOVIE_TITLE_EMBEDDINGS_PATH,
     FEATURE_USER_GENRE_AVG_RATINGS_PATH,
     FEATURES_DIR,
@@ -117,6 +118,10 @@ if __name__ == "__main__":
     ratings = pl.read_parquet(CLEAN_RATING_DATA_PATH)
     movies = pl.read_parquet(CLEAN_MOVIE_DATA_PATH)
 
+    logger.info("Outputting movie ID and release year information...")
+    movie_info = movies.select(["movie_id", "release_year"])
+    movie_info.write_parquet(FEATURE_MOVIE_INFO_PATH)
+
     logger.info("Calculating movie title embeddings...")
     title_embeddings = movie_title_embeddings(movies)
     title_embeddings.write_parquet(FEATURE_MOVIE_TITLE_EMBEDDINGS_PATH)
@@ -127,6 +132,7 @@ if __name__ == "__main__":
 
     user_ids = ratings["user_id"].unique().to_list()
 
+    # Calculate user genre avg ratings in chunks to keep memory usage low
     NUM_CHUNKS = 100
     with tempfile.TemporaryDirectory() as tmpdir:
         for chunk in range(1, NUM_CHUNKS + 1):
