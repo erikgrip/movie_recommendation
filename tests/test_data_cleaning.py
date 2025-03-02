@@ -10,6 +10,7 @@ from prepare_data.clean import (
     impute_missing_year,
 )
 
+
 def test_extract_movie_release_year():
     titles = pd.Series(["Toy Story (1995)", "Jumanji (1995)", "No Year"])
 
