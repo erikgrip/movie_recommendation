@@ -41,11 +41,11 @@ def impute_missing_year(
         .set_index("movie_id")["timestamp"]
         .apply(lambda x: x.year)
     )
-    mask = movie_data["year"].isna()
-    movie_data.loc[mask, "year"] = movie_data.loc[mask, "movie_id"].map(
+    mask = movie_data["release_year"].isna()
+    movie_data.loc[mask, "release_year"] = movie_data.loc[mask, "movie_id"].map(
         year_first_rated
     )
-    movie_data["year"] = movie_data["year"].astype("int")
+    movie_data["release_year"] = movie_data["release_year"].astype("int")
     return movie_data
 
 

@@ -23,11 +23,7 @@ The data preparation pipeline consists of the following steps:
 
 ## Usage
 
-To run the complete data preparation pipeline, use one of the following methods:
-
-### Using Poetry (recommended)
-
-If you've installed the project with Poetry:
+To run the complete data preparation pipeline:
 
 ```bash
 # From project root
@@ -44,10 +40,37 @@ data/
 ├── extracted/            # Extracted CSV files
 ├── clean/                # Cleaned parquet files
 └── features/             # Generated features
-    ├── movie_title_embeddings.parquet
     ├── movie_genre_dummies.parquet
+    ├── movie_info.parquet
+    ├── movie_title_embeddings.parquet
     └── user_genre_avg_ratings.parquet
 ```
+
+Example row from each parquet file:
+
+```
+### movie_genre_dummies.parquet
+| movie_id | is_action | is_adventure | is_animation | ...
+|----------|-----------|--------------|--------------|----------|
+| 1        | 0         | 0            | 1            | ...      |
+
+### movie_info.parquet
+| movie_id | relase_year |
+|----------|-------------|
+| 1        | 1995        |
+
+### movie_title_embeddings.parquet
+| movie_id | title_embedding      |
+|----------|----------------------|
+| 1        | [0.1, 0.2, 0.3, ...] |
+
+### user_genre_avg_ratings.parquet
+| user_id  | timestamp           | avg_rating_action | avg_rating_adventure | ...
+|----------|---------------------|-------------------|----------------------|-----|
+| 162142   | 2014-11-07 01:55:27 | 3.0               | 3.0                  | ... |
+
+```
+
 
 ## Dependencies
 
